@@ -383,13 +383,18 @@ input[type=date].inp{min-height:48px}
 /* =====================================================================
    STUDY.LOG – Logik (ohne DOM). ES5, damit es auch auf älteren iPhones läuft.
    ===================================================================== */
-var APP_VERSION = '1.0.0';
+var APP_VERSION = '1.0.1';
 var STORE_KEY = 'studylog_v1_state';
 var SCHEMA = 1;
 var XP_CARD = 10, XP_DECK = 50, XP_ALL = 100;
-var MASTER_STAGE = 5;
+var MASTER_STAGE = 5;   /* ab hier zählt eine Karte als „gefestigt“ (nur Statistik) */
+var MAX_STAGE = 10;     /* Höchststufe: höchstens alle 10 Tage, bis die Karte falsch ist */
 
 var NEWS = [
+  { v: '1.0.1', date: '12.11.2026', items: [
+    'Karten kommen höchstens alle 10 Tage: Ab Stufe 10 bleibt der Abstand bei 10 Tagen, bis du eine Karte nicht weißt. Keine Karte fällt mehr aus der Abfrage.',
+    '„Sitzt“ heißt jetzt „gefestigt“ (ab Stufe 5). Das ist nur eine Statistik – gefestigte Karten werden weiter abgefragt.'
+  ] },
   { v: '1.0.0', date: '12.11.2026', items: [
     'Kartenstapel mit Stufen-System: Stufe n heißt alle n Tage. Falsch = zurück auf Stufe 1, die Karte kommt am Ende der Runde nochmal.',
     'Import von Kartenstapeln aus Chats – als Datei oder Text zum Einfügen.',
@@ -469,7 +474,11 @@ function fillDefaults(base, saved) {
 function migrate(st) {
   /* künftige Schema-Migrationen hier einfügen (if (st.schema < 2) {...}) */
   st.schema = SCHEMA;
-  for (var i = 0; i < st.cards.length; i++) ensureProg(st.cards[i]);
+  for (var i = 0; i < st.cards.length; i++) {
+    var c = st.cards[i];
+    ensureProg(c);
+    for (var k in c.prog) if (c.prog.hasOwnProperty(k) && c.prog[k].stage > MAX_STAGE) c.prog[k].stage = MAX_STAGE;
+  }
   return st;
 }
 function load() {
@@ -634,7 +643,7 @@ function answerItem(it, ok, t) {
   if (!p.seen) { p.seen = true; p.first = t; day.newIntro[c.deckId] = (day.newIntro[c.deckId] || 0) + 1; }
   if (res.first) {
     p.reps++;
-    if (ok) { p.stage = p.stage + 1; p.relearn = false; }
+    if (ok) { p.stage = Math.min(p.stage + 1, MAX_STAGE); p.relearn = false; }
     else { if (!res.wasNew && p.stage > 0) p.lapses++; p.stage = 1; p.relearn = true; }
     p.due = capDue(deck, addDays(t, p.stage), t);
     if (p.stage > p.best) p.best = p.stage;
@@ -804,8 +813,8 @@ var ACH = [
   { id: 's100', i: 'flame', n: 'Netzstabil', d: '100 Tage Serie', f: function () { return S.streak.best >= 100; } },
   { id: 'decks5', i: 'cards', n: 'Verteilerkasten', d: '5 Stapel gleichzeitig', f: function () { return liveDecks().length >= 5; } },
   { id: 'cards500', i: 'cards', n: 'Pumpspeicher', d: '500 Karten in der Sammlung', f: function () { return liveCards().length >= 500; } },
-  { id: 'stage10', i: 'star', n: 'Langzeitspeicher', d: 'Eine Karte hat Stufe 10 erreicht', f: function (x) { var p = itemProg(x); return !!p && p.stage >= 10; } },
-  { id: 'stage20', i: 'star', n: 'Supraleiter', d: 'Eine Karte hat Stufe 20 erreicht', f: function (x) { var p = itemProg(x); return !!p && p.stage >= 20; } },
+  { id: 'stage10', i: 'star', n: 'Langzeitspeicher', d: 'Eine Karte hat die Höchststufe 10 erreicht', f: function (x) { var p = itemProg(x); return !!p && p.stage >= MAX_STAGE; } },
+  { id: 'max100', i: 'star', n: 'Supraleiter', d: '100 Karten gleichzeitig auf der Höchststufe 10', f: function (x) { var p = itemProg(x); return !!p && p.stage >= MAX_STAGE && countAtMax() >= 100; } },
   { id: 'sketch', i: 'edit', n: 'Schaltplan', d: 'Erste Skizze gezeichnet', f: function () { return S.totals.sketches >= 1; } },
   { id: 'exam', i: 'cal', n: 'Countdown', d: 'Ersten Prüfungstermin eingetragen', f: function () { for (var i = 0; i < S.decks.length; i++) if (S.decks[i].examDate) return true; return false; } },
   { id: 'exam_ready', i: 'cup', n: 'Prüfungsreif', d: 'Vor der Prüfung jede Karte eines Stapels auf mind. Stufe 3', f: function (x) { return !!x.item && examReady(); } },
@@ -814,6 +823,11 @@ var ACH = [
   { id: 'pi', h: true, i: 'star', n: 'π mal Daumen', d: 'Genau 314 Karten beantwortet', f: function () { return S.totals.answers === 314; } },
   { id: 'undo', h: true, i: 'undo', n: 'Strg + Z', d: 'Eine Antwort rückgängig gemacht', f: function () { return S.totals.undos >= 1; } }
 ];
+function countAtMax() {
+  var cs = liveCards(), n = 0;
+  for (var i = 0; i < cs.length; i++) { var dirs = cardDirs(cs[i]); for (var j = 0; j < dirs.length; j++) if (cs[i].prog[dirs[j]].stage >= MAX_STAGE) n++; }
+  return n;
+}
 function checkAch(ctx) {
   ctx = ctx || {};
   var got = [];
@@ -1412,7 +1426,7 @@ function viewHome() {
     if (q.relearn.length) parts.push(q.relearn.length + ' nochmal');
     tiles += '<article class="deck' + (q.total ? ' has-due' : isDone ? ' is-done' : '') + '" data-a="openDeck" data-v="' + d.id + '">' +
       '<div class="deck-top"><h3>' + h(d.name) + '</h3>' + examBadge(d, t) + '</div>' +
-      '<div class="deck-mid">' + dueHtml + '<div class="deck-meta">' + (parts.length ? parts.join(' · ') + '<br>' : '') + st.cards + ' Karten · ' + st.pct + ' % sitzen</div>' +
+      '<div class="deck-mid">' + dueHtml + '<div class="deck-meta">' + (parts.length ? parts.join(' · ') + '<br>' : '') + st.cards + ' Karten · ' + st.pct + ' % gefestigt</div>' +
       (q.total ? '<button class="play" data-a="learn" data-v="' + d.id + '" aria-label="Lernen">' + icon('play') + '</button>' : '') + '</div>' +
       masteryBar(st) + '</article>';
   }
@@ -1452,9 +1466,10 @@ function viewDeck(d) {
   else s += '<button class="btn full" disabled>' + icon('check') + (isDone ? 'Heute geschafft' : 'Heute nichts fällig') + '</button>';
   s += '<button class="btn ghost full" style="margin-top:12px" data-a="practice" data-v="' + d.id + '"' + (st.cards ? '' : ' disabled') + '>' + icon('shuffle') + 'Freies Üben</button>';
   s += '<section class="panel" style="margin-top:16px"><h3>Fortschritt</h3>' + masteryBar(st) +
-    '<div class="legend"><span><i style="background:var(--ok)"></i>sitzt (ab Stufe ' + MASTER_STAGE + '): ' + st.high + '</span><span><i style="background:var(--cyan)"></i>Stufe 3–' + (MASTER_STAGE - 1) + ': ' + st.mid +
+    '<div class="legend"><span><i style="background:var(--ok)"></i>gefestigt (Stufe ' + MASTER_STAGE + '–' + MAX_STAGE + '): ' + st.high + '</span><span><i style="background:var(--cyan)"></i>Stufe 3–' + (MASTER_STAGE - 1) + ': ' + st.mid +
     '</span><span><i style="background:var(--orange)"></i>Stufe 1–2: ' + st.low + '</span><span><i style="background:#000;border:1px solid var(--line2)"></i>neu: ' + st.fresh + '</span></div>' +
-    '<div class="kpis"><div><b>' + st.cards + '</b><span>Karten</span></div><div><b>' + st.pct + ' %</b><span>sitzen</span></div><div><b>' + st.tomorrow + '</b><span>morgen</span></div></div></section>';
+    '<p style="font-size:12px;margin:10px 0 0">Keine Karte fällt raus: Gewusste Karten kommen seltener, höchstens aber alle ' + MAX_STAGE + ' Tage – bis du sie einmal nicht weißt.</p>' +
+    '<div class="kpis"><div><b>' + st.cards + '</b><span>Karten</span></div><div><b>' + st.pct + ' %</b><span>gefestigt</span></div><div><b>' + st.tomorrow + '</b><span>morgen</span></div></div></section>';
   s += '<div class="sec-h"><h2>Karten</h2><button class="btn sm" data-a="newCard" data-v="' + d.id + '">' + icon('plus') + 'Karte</button></div>';
   var cs = deckCards(d.id);
   if (cs.length > 8) s += '<div class="search">' + icon('search') + '<input class="inp" id="cardSearch" type="search" placeholder="Karten durchsuchen" value="' + h(UI.search) + '"></div>';
@@ -1537,7 +1552,7 @@ function renderSession() {
   var pct = Math.round(100 * s.pos / s.queue.length);
   var tags = '<div class="tags"><span class="tag t-' + c.type + '">' + TYPES[c.type] + '</span>' + (it.dir === 'r' ? '<span class="tag dim">Rückrichtung</span>' : '') +
     (!p.seen ? '<span class="tag cyan">Neu</span>' : '') + (p.relearn && p.last === s.t ? '<span class="tag" style="color:var(--bad)">Nochmal</span>' : '');
-  var stageInfo = s.practice ? 'Freies Üben – ohne Wertung' : (!p.seen ? 'Neue Karte' : 'Stufe ' + p.stage + (p.relearn && p.last === s.t ? ' · Wiederholung' : ''));
+  var stageInfo = s.practice ? 'Freies Üben – ohne Wertung' : (!p.seen ? 'Neue Karte' : 'Stufe ' + p.stage + (p.stage >= MAX_STAGE ? ' (max.)' : '') + (p.relearn && p.last === s.t ? ' · Wiederholung' : ''));
   $('layer').innerHTML = '<div class="ly">' +
     '<div class="ses-top"><button class="icon-btn" data-a="endSession" aria-label="Beenden">' + icon('close') + '</button><div class="ses-prog"><i style="width:' + pct + '%"></i></div>' +
     '<span class="ses-count">' + (s.pos + 1) + '/' + s.queue.length + '</span></div>' +
@@ -1652,7 +1667,7 @@ function renderEditor() {
   var info = '';
   if (c) {
     var p = c.prog.f;
-    info = '<p class="ed-info">' + (p.seen ? 'Stufe ' + p.stage + ' · nächste Abfrage ' + (p.due ? fmtDay(p.due) : '–') + ' · ' + p.lapses + '× vergessen' : 'Noch nicht gelernt') + '</p>';
+    info = '<p class="ed-info">' + (p.seen ? 'Stufe ' + p.stage + (p.stage >= MAX_STAGE ? ' (Höchststufe)' : '') + ' · nächste Abfrage ' + (p.due ? fmtDay(p.due) : '–') + ' · ' + p.lapses + '× vergessen' : 'Noch nicht gelernt') + '</p>';
   }
   $('layer').innerHTML = '<div class="ly"><div class="ed-top"><button class="icon-btn" data-a="edCancel" aria-label="Abbrechen">' + icon('close') + '</button><h2>' + (e.id ? 'Karte bearbeiten' : 'Neue Karte') + '</h2>' +
     '<button class="btn sm" data-a="edSave">' + icon('save') + 'Speichern</button></div>' + info +
@@ -1958,7 +1973,7 @@ function viewStats() {
   var quote = tot.answers ? Math.round(100 * tot.correct / tot.answers) : 0;
   var s = '<section class="panel"><h2>Überblick</h2><div class="kgrid">' +
     '<div><b>' + fmtNum(tot.answers) + '</b><span>Antworten</span></div><div><b>' + quote + ' %</b><span>gewusst</span></div><div><b>' + fmtNum(cs.length) + '</b><span>Karten</span></div>' +
-    '<div><b>' + (items ? Math.round(100 * hi / items) : 0) + ' %</b><span>sitzen</span></div><div><b>' + S.streak.best + '</b><span>Rekordserie</span></div><div><b>' + fmtNum(S.xp) + '</b><span>XP gesamt</span></div></div></section>';
+    '<div><b>' + (items ? Math.round(100 * hi / items) : 0) + ' %</b><span>gefestigt</span></div><div><b>' + S.streak.best + '</b><span>Rekordserie</span></div><div><b>' + fmtNum(S.xp) + '</b><span>XP gesamt</span></div></div></section>';
   var days = [], mx = 1;
   for (i = 13; i >= 0; i--) { var k = addDays(t, -i), r = S.days[k]; days.push({ k: k, ok: r ? r.correct : 0, bad: r ? r.wrong : 0 }); }
   for (i = 0; i < days.length; i++) mx = Math.max(mx, days[i].ok + days[i].bad);
@@ -1976,7 +1991,7 @@ function viewStats() {
   if (ds.length) {
     var rows = '';
     for (i = 0; i < ds.length; i++) { var st = deckStats(ds[i], t); rows += '<tr><td>' + h(ds[i].name) + '</td><td>' + st.cards + '</td><td>' + st.pct + ' %</td><td>' + (ds[i].examDate ? fmtDay(ds[i].examDate).slice(0, 6) : '–') + '</td></tr>'; }
-    s += '<section class="panel"><h3>Stapel</h3><table class="dtab"><tr><th>Stapel</th><th>Karten</th><th>sitzen</th><th>Prüfung</th></tr>' + rows + '</table></section>';
+    s += '<section class="panel"><h3>Stapel</h3><table class="dtab"><tr><th>Stapel</th><th>Karten</th><th>gefestigt</th><th>Prüfung</th></tr>' + rows + '</table></section>';
   }
   return s;
 }
@@ -2040,7 +2055,7 @@ function onRestoreFile(file) {
 }
 function showWelcome() {
   sheet('<h2 class="glow">Willkommen bei STUDY.LOG</h2><p>Deine Lernkarten für die Technikerschule.</p><ul>' +
-    '<li>Jeder Stapel hat jeden Tag seine Runde.</li><li>Gewusst: Die Karte kommt seltener – alle 2, 3, 4 … Tage.</li>' +
+    '<li>Jeder Stapel hat jeden Tag seine Runde.</li><li>Gewusst: Die Karte kommt seltener – alle 2, 3, 4 … Tage, höchstens aber alle 10 Tage. Keine Karte fällt raus.</li>' +
     '<li>Nicht gewusst: Sie kommt am Ende der Runde nochmal und morgen wieder.</li><li>Karten lässt du dir von Chats erstellen und importierst sie.</li></ul>' +
     '<p>Wie sollen deine Titel lauten?</p><div class="form-pick"><button class="btn" data-a="pickForm" data-v="m">Techniker</button><button class="btn" data-a="pickForm" data-v="w">Technikerin</button></div>');
 }
