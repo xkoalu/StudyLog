@@ -1,0 +1,2207 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="STUDY.LOG">
+<meta name="theme-color" content="#05060d">
+<meta name="description" content="Lernkarten für die Technikerschule – offline, mit Stufen-System, Import aus Chats, Level und Erfolgen.">
+<title>STUDY.LOG</title>
+<link rel="manifest" href="./manifest.json?v=1">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<style>
+:root{
+  --bg:#05060d; --bg2:#0a0d1d; --panel:#0f1329; --panel2:#151a37; --line:#252c63; --line2:#3a4396;
+  --text:#eef1ff; --dim:#8d96cc; --dim2:#5d6597;
+  --volt:#ffe53b; --volt-d:#8f7f00; --cyan:#29f0ff; --cyan-d:#0a7d88; --mag:#ff3ddc; --ok:#38ff9c; --ok-d:#0d8a4f;
+  --bad:#ff4570; --bad-d:#8f1736; --orange:#ff9d2e; --paper:#f4f6ff;
+  --pix: ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Courier New",monospace;
+  --sans: -apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,sans-serif;
+  --math: "STIX Two Math","Cambria Math","Times New Roman",Times,serif;
+  --sat: env(safe-area-inset-top,0px); --sab: env(safe-area-inset-bottom,0px);
+  --sal: env(safe-area-inset-left,0px); --sar: env(safe-area-inset-right,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.4}
+body{min-height:100%;touch-action:manipulation;-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
+#bg{position:fixed;top:0;right:0;bottom:0;left:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(120% 60% at 50% -10%,rgba(41,240,255,.16),transparent 60%),
+    radial-gradient(80% 50% at 100% 110%,rgba(255,61,220,.12),transparent 60%),
+    linear-gradient(rgba(41,240,255,.06) 1px,transparent 1px) 0 0/24px 24px,
+    linear-gradient(90deg,rgba(41,240,255,.06) 1px,transparent 1px) 0 0/24px 24px,var(--bg)}
+#bg:after{content:"";position:absolute;top:0;right:0;bottom:0;left:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);opacity:.5}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;-webkit-user-select:none;user-select:none}
+button:disabled{opacity:.4;cursor:default}
+input,textarea,select{font:inherit;font-size:16px;color:var(--text)}
+.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:square;stroke-linejoin:miter;vertical-align:middle;flex:none}
+.pix{font-family:var(--pix);text-transform:uppercase;letter-spacing:.08em}
+.dim{color:var(--dim)} .volt{color:var(--volt)} .cyan{color:var(--cyan)}
+.glow{color:var(--volt);text-shadow:0 0 6px rgba(255,229,59,.75),0 0 18px rgba(255,229,59,.35)}
+.glow-c{color:var(--cyan);text-shadow:0 0 6px rgba(41,240,255,.75),0 0 18px rgba(41,240,255,.3)}
+.hidden{display:none!important}
+
+/* ---------- Kopf & Tabs ---------- */
+#top{position:fixed;top:0;left:0;right:0;z-index:20;padding:calc(var(--sat) + 8px) calc(14px + var(--sar)) 8px calc(14px + var(--sal));
+  display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(5,6,13,.97),rgba(5,6,13,.85));
+  border-bottom:2px solid var(--line);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--pix);font-weight:800;font-size:19px;letter-spacing:.06em}
+.logo .ic{width:24px;height:24px;color:var(--volt);filter:drop-shadow(0 0 5px rgba(255,229,59,.8));animation:flicker 4s steps(1) infinite}
+.logo b{color:var(--volt)} .logo span{color:var(--cyan)}
+.chip{font-family:var(--pix);font-size:12px;font-weight:700;letter-spacing:.06em;padding:5px 9px;border:2px solid var(--volt);color:var(--volt);background:rgba(255,229,59,.08);box-shadow:0 0 12px rgba(255,229,59,.25)}
+#main{padding:calc(var(--sat) + 64px) calc(14px + var(--sar)) calc(var(--sab) + 92px) calc(14px + var(--sal));max-width:640px;margin:0 auto}
+#tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;background:rgba(5,6,13,.96);border-top:2px solid var(--line);padding:0 var(--sar) var(--sab) var(--sal)}
+#tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 8px;color:var(--dim2);font-family:var(--pix);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;position:relative}
+#tabs button.on{color:var(--volt);text-shadow:0 0 8px rgba(255,229,59,.6)}
+#tabs button.on:before{content:"";position:absolute;top:-2px;left:22%;right:22%;height:3px;background:var(--volt);box-shadow:0 0 10px var(--volt)}
+#tabs .ic{width:24px;height:24px}
+
+/* ---------- Bausteine ---------- */
+.panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:2px solid var(--line);box-shadow:4px 4px 0 #000;padding:14px;margin:0 0 14px;position:relative}
+.panel.hl{border-color:var(--volt);box-shadow:4px 4px 0 #000,0 0 22px rgba(255,229,59,.15)}
+.panel h2,.panel h3{margin:0 0 10px;font-family:var(--pix);text-transform:uppercase;letter-spacing:.08em;font-size:15px}
+.panel h3{font-size:13px;color:var(--cyan)}
+.panel p{margin:0 0 10px;color:var(--dim);font-size:14px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px}
+.sec-h h2{margin:0;font-family:var(--pix);font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:12px 16px;font-family:var(--pix);font-weight:800;font-size:14px;letter-spacing:.08em;text-transform:uppercase;
+  color:#111;background:var(--volt);border:2px solid #fff6a8;box-shadow:0 4px 0 var(--volt-d),0 0 18px rgba(255,229,59,.3);transition:transform .06s,box-shadow .06s}
+.btn:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--volt-d)}
+.btn.full{width:100%}
+.btn.cy{background:var(--cyan);border-color:#b8fbff;box-shadow:0 4px 0 var(--cyan-d),0 0 18px rgba(41,240,255,.3)}
+.btn.cy:active:not(:disabled){box-shadow:0 1px 0 var(--cyan-d)}
+.btn.ghost{background:rgba(41,240,255,.06);color:var(--cyan);border-color:var(--cyan);box-shadow:0 4px 0 #04363b}
+.btn.ghost:active:not(:disabled){box-shadow:0 1px 0 #04363b}
+.btn.ok{background:var(--ok);border-color:#c5ffe2;box-shadow:0 4px 0 var(--ok-d),0 0 18px rgba(56,255,156,.3)}
+.btn.bad{background:var(--bad);color:#fff;border-color:#ffc2d1;box-shadow:0 4px 0 var(--bad-d),0 0 18px rgba(255,69,112,.3)}
+.btn.ok:active:not(:disabled){box-shadow:0 1px 0 var(--ok-d)} .btn.bad:active:not(:disabled){box-shadow:0 1px 0 var(--bad-d)}
+.btn.danger{background:transparent;color:var(--bad);border-color:var(--bad);box-shadow:0 4px 0 #3d0716}
+.btn.sm{min-height:38px;padding:7px 11px;font-size:12px}
+.row{display:flex;gap:10px} .row>*{flex:1}
+.icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--line2);background:var(--panel);color:var(--text)}
+.icon-btn:active{background:var(--line)}
+.tag{display:inline-block;font-family:var(--pix);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px;border:1.5px solid currentColor;line-height:1}
+.t-frage{color:var(--cyan)} .t-formel{color:var(--volt)} .t-zeichen{color:var(--mag)} .t-these{color:var(--orange)}
+.empty{text-align:center;padding:26px 14px}
+.empty .big-ic .ic{width:56px;height:56px;color:var(--volt);filter:drop-shadow(0 0 10px rgba(255,229,59,.6))}
+.field{display:block;margin:0 0 12px}
+.field>span{display:block;font-family:var(--pix);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
+.inp{width:100%;background:#070914;border:2px solid var(--line2);padding:11px 12px;border-radius:0;outline:none;-webkit-appearance:none;appearance:none}
+.inp:focus{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan),0 0 14px rgba(41,240,255,.25)}
+textarea.inp{min-height:84px;resize:vertical;line-height:1.35}
+input[type=date].inp{min-height:48px}
+.chk{display:flex;align-items:center;gap:10px;margin:6px 0 12px;font-size:15px}
+.chk input{width:24px;height:24px;accent-color:var(--volt);flex:none}
+.seg{display:flex;border:2px solid var(--line2);margin:0 0 12px}
+.seg button{flex:1;padding:11px 2px;font-family:var(--pix);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);border-right:2px solid var(--line2)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--volt);color:#111}
+.stepper{display:flex;align-items:center;gap:0;border:2px solid var(--line2)}
+.stepper button{width:46px;height:44px;font-size:22px;font-weight:800;color:var(--cyan)}
+.stepper b{min-width:64px;text-align:center;font-family:var(--pix);font-size:16px}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.set-row:last-child{border-bottom:0}
+.set-row .lbl{font-size:15px} .set-row .lbl small{display:block;color:var(--dim);font-size:12px;margin-top:2px}
+
+/* ---------- Spielerkarte ---------- */
+.player{display:flex;gap:14px;align-items:center}
+.lvl{width:68px;height:68px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid var(--volt);background:radial-gradient(circle,rgba(255,229,59,.18),transparent 70%);box-shadow:0 0 16px rgba(255,229,59,.35),inset 0 0 12px rgba(255,229,59,.2);font-family:var(--pix)}
+.lvl span{font-size:10px;letter-spacing:.15em;color:var(--volt)} .lvl b{font-size:28px;line-height:1;color:#fff;text-shadow:0 0 8px rgba(255,229,59,.8)}
+.pl-info{flex:1;min-width:0}
+.pl-title{font-family:var(--pix);font-weight:800;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--volt);margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xpbar{height:14px;border:2px solid var(--volt);background:#000;padding:1px;position:relative}
+.xpbar i{display:block;height:100%;background:repeating-linear-gradient(-45deg,var(--volt) 0 6px,#ffc400 6px 12px);background-size:17px 17px;animation:flow .9s linear infinite;box-shadow:0 0 10px rgba(255,229,59,.7);min-width:2px}
+.pl-xp{font-family:var(--pix);font-size:11px;color:var(--dim);margin-top:5px;letter-spacing:.04em}
+.pl-stats{display:flex;gap:8px;margin-top:12px}
+.pl-stats>div{flex:1;border:2px solid var(--line);padding:8px 6px;text-align:center;background:rgba(0,0,0,.25)}
+.pl-stats b{display:block;font-family:var(--pix);font-size:18px;color:#fff}
+.pl-stats b .ic{width:18px;height:18px;color:var(--volt);margin:-3px 2px 0 0}
+.pl-stats span{display:block;font-family:var(--pix);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-top:2px}
+.pl-stats .joker-off b{color:var(--dim2)}
+.today{display:flex;align-items:center;gap:12px}
+.today .ic{width:30px;height:30px;color:var(--cyan)}
+.today.done .ic{color:var(--ok)}
+.today b{font-family:var(--pix);font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.today small{display:block;color:var(--dim);font-size:13px;margin-top:2px}
+.banner{display:flex;align-items:center;gap:10px;border:2px dashed var(--orange);color:var(--orange);padding:10px 12px;margin:0 0 14px;font-size:14px}
+.banner .btn{margin-left:auto}
+
+/* ---------- Stapel ---------- */
+.deck{display:block;background:linear-gradient(180deg,var(--panel2),var(--panel));border:2px solid var(--line);box-shadow:4px 4px 0 #000;padding:12px 12px 10px;margin:0 0 12px;cursor:pointer;position:relative}
+.deck:active{border-color:var(--line2)}
+.deck.has-due{border-color:var(--cyan);box-shadow:4px 4px 0 #000,0 0 18px rgba(41,240,255,.15)}
+.deck.is-done{border-color:var(--ok-d)}
+.deck-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.deck h3{margin:0;font-size:17px;line-height:1.25;word-break:break-word}
+.exam{flex:none;font-family:var(--pix);font-size:10px;font-weight:800;letter-spacing:.08em;padding:3px 6px;color:var(--mag);border:1.5px solid var(--mag);white-space:nowrap}
+.exam.soon{color:#111;background:var(--mag);box-shadow:0 0 12px rgba(255,61,220,.5)}
+.exam.past{color:var(--dim2);border-color:var(--dim2)}
+.deck-mid{display:flex;align-items:center;gap:12px;margin:10px 0 9px}
+.due{min-width:58px;text-align:center}
+.due b{display:block;font-family:var(--pix);font-size:28px;line-height:1;color:var(--cyan);text-shadow:0 0 10px rgba(41,240,255,.6)}
+.due span{font-family:var(--pix);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.due.ok b{color:var(--ok);text-shadow:0 0 10px rgba(56,255,156,.6)} .due.zero b{color:var(--dim2);text-shadow:none}
+.deck-meta{flex:1;font-size:13px;color:var(--dim);line-height:1.45}
+.play{width:52px;height:52px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--cyan);color:#111;border:2px solid #b8fbff;box-shadow:0 4px 0 var(--cyan-d),0 0 14px rgba(41,240,255,.4)}
+.play:active{transform:translateY(3px);box-shadow:0 1px 0 var(--cyan-d)}
+.play .ic{width:24px;height:24px;fill:#111;stroke:#111}
+.mbar{height:8px;background:#000;border:1.5px solid var(--line2);display:flex}
+.mbar i{display:block;height:100%}
+.mbar .s-hi{background:var(--ok);box-shadow:0 0 8px rgba(56,255,156,.6)} .mbar .s-mid{background:var(--cyan)} .mbar .s-lo{background:var(--orange)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px;font-size:12px;color:var(--dim)}
+.legend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}
+.dk-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.dk-head h1{flex:1;margin:0;font-size:21px;line-height:1.2;word-break:break-word}
+.desc{color:var(--dim);font-size:14px;margin:-4px 0 12px}
+.examrow{display:flex;align-items:center;gap:10px;font-size:14px}
+.examrow .ic{color:var(--mag)}
+.examrow b{font-family:var(--pix);color:var(--mag);letter-spacing:.04em}
+.kpis{display:flex;gap:8px;margin-top:12px}
+.kpis>div{flex:1;text-align:center;border:2px solid var(--line);padding:8px 4px;background:rgba(0,0,0,.25)}
+.kpis b{display:block;font-family:var(--pix);font-size:18px}
+.kpis span{font-family:var(--pix);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.search{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+.search .ic{color:var(--dim)}
+.clist{border:2px solid var(--line);background:var(--panel)}
+.crow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;min-height:52px}
+.crow:last-child{border-bottom:0}
+.crow:active{background:var(--panel2)}
+.crow-f{flex:1;min-width:0;font-size:15px;max-height:2.9em;overflow:hidden;line-height:1.4}
+.crow-f .mdisp{display:inline;margin:0}
+.stg{font-family:var(--pix);font-size:11px;font-weight:800;color:var(--dim);flex:none;min-width:30px;text-align:right}
+.stg.hi{color:var(--ok)} .stg.new{color:var(--cyan)}
+.more{padding:12px;text-align:center;color:var(--dim);font-size:13px}
+
+/* ---------- Ebenen (Lernen, Editor, Skizze) ---------- */
+#layer{position:fixed;top:0;right:0;bottom:0;left:0;z-index:40;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
+#layer.hidden{display:none}
+#layer:before{content:"";position:fixed;top:0;right:0;bottom:0;left:0;z-index:-1;background:
+  radial-gradient(100% 50% at 50% 0,rgba(41,240,255,.12),transparent 60%),
+  linear-gradient(rgba(41,240,255,.05) 1px,transparent 1px) 0 0/24px 24px,
+  linear-gradient(90deg,rgba(41,240,255,.05) 1px,transparent 1px) 0 0/24px 24px,var(--bg)}
+.ly{max-width:640px;margin:0 auto;padding:calc(var(--sat) + 10px) calc(14px + var(--sar)) calc(var(--sab) + 20px) calc(14px + var(--sal));min-height:100%;display:flex;flex-direction:column}
+.ses-top{display:flex;align-items:center;gap:10px}
+.ses-prog{flex:1;height:12px;border:2px solid var(--cyan);background:#000;padding:1px}
+.ses-prog i{display:block;height:100%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);transition:width .3s}
+.ses-count{font-family:var(--pix);font-size:13px;font-weight:800;min-width:54px;text-align:right}
+.ses-deck{font-family:var(--pix);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:10px 0 10px;display:flex;justify-content:space-between;gap:10px}
+.ses-deck b{color:var(--orange)}
+.flip{perspective:1400px;-webkit-perspective:1400px;flex:1;display:flex;flex-direction:column;cursor:pointer}
+.flip-in{display:grid;flex:1;transition:transform .45s cubic-bezier(.2,.75,.25,1);transform-style:preserve-3d;-webkit-transform-style:preserve-3d;position:relative}
+.flip-in.is-flipped{transform:rotateY(180deg)}
+.face{grid-area:1/1;-webkit-backface-visibility:hidden;backface-visibility:hidden;min-height:46vh;display:flex;flex-direction:column;padding:14px 16px 16px;
+  background:radial-gradient(120% 80% at 50% 0,rgba(255,255,255,.05),transparent 60%),var(--panel);border:2px solid currentColor;box-shadow:4px 4px 0 #000,0 0 26px -6px currentColor}
+.face.back{transform:rotateY(180deg)}
+.face .tags{display:flex;gap:6px;flex-wrap:wrap}
+.face .lbl{font-family:var(--pix);font-size:10px;letter-spacing:.14em;color:var(--dim);margin-left:auto;align-self:center}
+.face-body{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;color:var(--text);font-size:23px;line-height:1.4;padding:16px 2px;word-break:break-word}
+.face.back .face-body{font-size:20px}
+.face .hint{text-align:center;font-family:var(--pix);font-size:10px;letter-spacing:.12em;color:var(--dim2);text-transform:uppercase}
+.media{background:var(--paper);border:2px solid #000;box-shadow:0 0 0 2px currentColor;padding:6px;margin:6px 0 4px;min-height:40px}
+.media img{display:block;width:100%;height:auto;max-height:36vh;object-fit:contain}
+.ses-btns{display:flex;gap:10px;margin-top:16px}
+.ses-btns .btn{flex:1;min-height:62px;font-size:14px;letter-spacing:.03em;padding:10px 8px;gap:6px}
+.ses-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;min-height:40px}
+.ses-foot .lnk{display:inline-flex;align-items:center;gap:6px;font-family:var(--pix);font-size:12px;letter-spacing:.06em;color:var(--dim);padding:8px 0}
+.ses-foot .stage{font-family:var(--pix);font-size:11px;color:var(--dim2);letter-spacing:.06em}
+.end{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:20px 0}
+.end h1{font-family:var(--pix);font-size:30px;line-height:1.15;margin:16px 0 6px;letter-spacing:.04em}
+.end .bolt-big .ic{width:84px;height:84px;color:var(--volt);filter:drop-shadow(0 0 16px rgba(255,229,59,.8));animation:zap 1.2s ease-out}
+.end .grid3{display:flex;gap:8px;margin:20px 0}
+.end .grid3>div{flex:1;border:2px solid var(--line);padding:10px 4px;background:var(--panel)}
+.end .grid3 b{display:block;font-family:var(--pix);font-size:22px}
+.end .grid3 span{font-family:var(--pix);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.end .btn{margin-top:10px}
+
+/* Editor */
+.ed-top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ed-top h2{flex:1;margin:0;font-family:var(--pix);font-size:14px;letter-spacing:.08em;text-transform:uppercase}
+.side{border:2px solid var(--line);padding:12px;margin-bottom:14px;background:var(--panel)}
+.side>span{display:block;font-family:var(--pix);font-size:11px;letter-spacing:.12em;color:var(--cyan);margin-bottom:8px}
+.tb{display:none;flex-wrap:wrap;gap:5px;margin:8px 0 0}
+.side.act .tb{display:flex}
+.tb button{min-width:38px;height:36px;padding:0 7px;border:1.5px solid var(--line2);background:#070914;font-family:var(--math);font-size:16px;color:var(--volt)}
+.tb button:active{background:var(--line)}
+.tb button.wide{font-family:var(--pix);font-size:11px;font-weight:800;color:var(--cyan)}
+.prev{margin-top:10px;padding:10px;border:1.5px dashed var(--line2);min-height:44px;font-size:18px;text-align:center;word-break:break-word}
+.prev:empty:before{content:"Vorschau";color:var(--dim2);font-family:var(--pix);font-size:11px;letter-spacing:.1em}
+.ed-media{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.thumb{width:96px;height:66px;background:var(--paper);border:2px solid #000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.thumb img{max-width:100%;max-height:100%}
+.ed-info{font-size:13px;color:var(--dim);margin:0 0 14px}
+
+/* Skizze */
+.sk{display:flex;flex-direction:column;min-height:100%}
+.sk-canvas{background:var(--paper);background-image:linear-gradient(rgba(31,79,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(31,79,255,.12) 1px,transparent 1px);background-size:20px 20px;border:2px solid var(--volt);box-shadow:0 0 18px rgba(255,229,59,.25)}
+.sk-canvas canvas{display:block;width:100%;height:auto;touch-action:none}
+.sk-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.sw{width:40px;height:40px;border:3px solid #000;box-shadow:0 0 0 2px var(--line2)}
+.sw.on{box-shadow:0 0 0 3px var(--volt),0 0 12px var(--volt)}
+.wd{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:2px solid var(--line2);background:var(--panel)}
+.wd.on{border-color:var(--volt)}
+.wd i{display:block;background:var(--text);border-radius:50%}
+.tool.on{border-color:var(--volt);color:var(--volt)}
+
+/* Sheet */
+#sheet{cursor:pointer;position:fixed;top:0;right:0;bottom:0;left:0;z-index:60;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center}
+#sheet.hidden{display:none}
+.sh{cursor:auto;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--panel);border-top:3px solid var(--volt);box-shadow:0 -10px 40px rgba(255,229,59,.15);
+  padding:18px calc(16px + var(--sar)) calc(var(--sab) + 18px) calc(16px + var(--sal));animation:up .22s ease-out}
+.sh h2{margin:0 0 12px;font-family:var(--pix);font-size:16px;letter-spacing:.08em;text-transform:uppercase}
+.sh p{color:var(--dim);font-size:14px;margin:0 0 12px}
+.sh ul{margin:0 0 14px;padding-left:20px;color:var(--text);font-size:14px} .sh li{margin-bottom:6px}
+.sh .btn{margin-top:6px}
+.news-v{font-family:var(--pix);color:var(--volt);font-size:12px;letter-spacing:.08em;margin:10px 0 6px}
+.form-pick{display:flex;gap:10px;margin:10px 0 4px}
+.form-pick .btn{flex:1}
+
+/* Import */
+.plan{border:2px solid var(--line2);padding:12px;margin:12px 0;background:#070914}
+.plan h4{margin:0 0 4px;font-size:16px}
+.plan .meta{font-size:13px;color:var(--dim);margin-bottom:8px}
+.warn{font-size:12px;color:var(--orange);margin:4px 0}
+.err{color:var(--bad);font-size:14px;margin:10px 0}
+.guide{white-space:pre-wrap;font-family:var(--pix);font-size:11.5px;line-height:1.45;background:#070914;border:1.5px solid var(--line2);padding:10px;max-height:40vh;overflow:auto;-webkit-user-select:text;user-select:text}
+
+/* Erfolge */
+.ladder{border:2px solid var(--line);background:var(--panel)}
+.ladder>div{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:15px}
+.ladder>div:last-child{border-bottom:0}
+.ladder .lv{font-family:var(--pix);font-size:11px;color:var(--dim);min-width:48px}
+.ladder .got{color:var(--text)} .ladder .got .ic{color:var(--ok)}
+.ladder .cur{background:rgba(255,229,59,.08);color:var(--volt);font-weight:700}
+.ladder .lock{color:var(--dim2)}
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ach{border:2px solid var(--line);background:var(--panel);padding:12px 10px;text-align:center;min-height:132px}
+.ach .badge{width:46px;height:46px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;border:2px solid var(--dim2);color:var(--dim2);transform:rotate(45deg)}
+.ach .badge .ic{transform:rotate(-45deg)}
+.ach b{display:block;font-family:var(--pix);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+.ach small{display:block;font-size:12px;color:var(--dim);line-height:1.3}
+.ach.on{border-color:var(--volt);box-shadow:0 0 16px rgba(255,229,59,.12)}
+.ach.on .badge{border-color:var(--volt);color:var(--volt);background:rgba(255,229,59,.1);box-shadow:0 0 12px rgba(255,229,59,.4)}
+.ach.off{opacity:.62}
+.xp-rules{font-size:13px;color:var(--dim);margin:0;padding-left:18px} .xp-rules li{margin-bottom:4px}
+
+/* Statistik */
+.kgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.kgrid>div{border:2px solid var(--line);background:rgba(0,0,0,.25);padding:10px 4px;text-align:center}
+.kgrid b{display:block;font-family:var(--pix);font-size:19px}
+.kgrid span{font-family:var(--pix);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.bars{display:flex;align-items:flex-end;gap:4px;height:120px;padding-top:8px}
+.bars>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bars .bv{width:100%;display:flex;flex-direction:column-reverse;min-height:2px}
+.bars .bv i{display:block;width:100%}
+.bars .b-ok{background:var(--ok)} .bars .b-bad{background:var(--bad)} .bars .b-fc{background:var(--cyan);box-shadow:0 0 8px rgba(41,240,255,.4)}
+.bars .bl{font-family:var(--pix);font-size:9px;color:var(--dim);margin-top:4px}
+.bars .bn{font-family:var(--pix);font-size:9px;color:var(--text);margin-bottom:2px}
+.dtab{width:100%;border-collapse:collapse;font-size:13px}
+.dtab td,.dtab th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:right}
+.dtab td:first-child,.dtab th:first-child{text-align:left}
+.dtab th{font-family:var(--pix);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:700}
+
+/* Toasts & Effekte */
+#toasts{position:fixed;top:calc(var(--sat) + 10px);left:12px;right:12px;z-index:90;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.toast{max-width:420px;width:100%;display:flex;align-items:center;gap:10px;background:var(--panel2);border:2px solid var(--cyan);box-shadow:4px 4px 0 #000,0 0 18px rgba(41,240,255,.3);padding:10px 12px;font-size:14px;animation:drop .25s ease-out}
+.toast.tach{border-color:var(--volt);box-shadow:4px 4px 0 #000,0 0 22px rgba(255,229,59,.45)}
+.toast .ic{color:var(--volt)}
+.toast b{display:block;font-family:var(--pix);font-size:10px;letter-spacing:.12em;color:var(--volt)}
+.toast.out{opacity:0;transform:translateY(-10px);transition:all .3s}
+#flash{position:fixed;top:0;right:0;bottom:0;left:0;z-index:70;pointer-events:none;opacity:0}
+#flash.ok{animation:fl-ok .35s ease-out} #flash.bad{animation:fl-bad .35s ease-out}
+#fx{cursor:pointer;position:fixed;top:0;right:0;bottom:0;left:0;z-index:95;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:radial-gradient(circle at 50% 42%,rgba(255,229,59,.24),transparent 58%),#05060d;padding:20px}
+#fx.hidden{display:none}
+#fx svg.zap{width:150px;height:200px;filter:drop-shadow(0 0 14px var(--volt))}
+#fx svg.zap path{fill:none;stroke:var(--volt);stroke-width:7;stroke-linejoin:miter;stroke-dasharray:600;stroke-dashoffset:600;animation:draw .5s ease-out forwards}
+#fx h1{font-family:var(--pix);font-size:38px;margin:14px 0 4px;letter-spacing:.08em;animation:pulse 1s ease-in-out infinite}
+#fx .lv{font-family:var(--pix);font-size:18px;color:#fff;letter-spacing:.1em}
+#fx .nt{margin-top:14px;font-family:var(--pix);font-size:13px;color:var(--cyan);letter-spacing:.08em;text-transform:uppercase}
+#fx small{margin-top:24px;font-family:var(--pix);font-size:10px;color:var(--dim);letter-spacing:.12em}
+#fx:before{content:"";position:absolute;top:0;right:0;bottom:0;left:0;background:#fff;animation:whiteflash .5s ease-out forwards;pointer-events:none}
+
+/* Mathe */
+.m{font-family:var(--math);font-size:1.12em;white-space:nowrap;line-height:1.6}
+.mdisp{display:block;margin:6px 0;white-space:normal}
+.m i{font-style:italic;padding-right:.04em}
+.mf{display:inline-block;vertical-align:middle;text-align:center;margin:0 .12em;font-size:.94em}
+.mfn{display:block;padding:0 .18em .08em;border-bottom:.07em solid currentColor;line-height:1.25}
+.mfd{display:block;padding:.1em .18em 0;line-height:1.25}
+.msp,.msb{font-size:.68em;line-height:0}
+.mss{display:inline-block;vertical-align:-.5em;font-size:.68em;line-height:1.1;text-align:left}
+.mss>span{display:block}
+.mq{display:inline-block;white-space:nowrap}
+.mqs{font-size:1.08em}
+.mqr{display:inline-block;border-top:.07em solid currentColor;padding:.06em .1em 0 .04em;line-height:1.25}
+.mqi{font-size:.58em;vertical-align:.9em;margin-right:-.45em}
+.ma{position:relative;display:inline-block;line-height:1.05}
+.ma-t{position:absolute;left:0;right:0;top:-.42em;text-align:center;font-size:.72em;line-height:1;font-style:normal}
+.ma.av .ma-t{top:-.6em;font-size:.78em}
+.ma.ao .ma-t{top:-.62em;font-size:.62em}
+.mo{display:inline-block;border-top:.07em solid currentColor;line-height:1.15}
+.ml{display:inline-block;border-bottom:.07em solid currentColor;line-height:1.15}
+.mus{display:inline-flex;flex-direction:column;align-items:center;vertical-align:top}
+.mus-b{font-size:.62em;line-height:1}
+.mt{font-style:normal} .mu{font-style:normal} .mfx{font-style:normal;margin-right:.14em}
+.mr{margin:0 .26em} .mb{margin:0 .2em}
+.s1{display:inline-block;width:.17em} .s2{display:inline-block;width:.24em} .s4{display:inline-block;width:1em}
+.mx{font-family:var(--pix);font-size:.7em;color:var(--bad)}
+
+@keyframes flow{from{background-position:0 0}to{background-position:17px 0}}
+@keyframes flicker{0%,100%{opacity:1}47%{opacity:1}48%{opacity:.3}49%{opacity:1}51%{opacity:.5}52%{opacity:1}}
+@keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+@keyframes drop{from{transform:translateY(-16px);opacity:0}to{transform:none;opacity:1}}
+@keyframes fl-ok{0%{opacity:1;box-shadow:inset 0 0 0 6px var(--ok),inset 0 0 80px rgba(56,255,156,.5)}100%{opacity:0;box-shadow:inset 0 0 0 6px var(--ok)}}
+@keyframes fl-bad{0%{opacity:1;box-shadow:inset 0 0 0 6px var(--bad),inset 0 0 80px rgba(255,69,112,.5)}100%{opacity:0;box-shadow:inset 0 0 0 6px var(--bad)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes whiteflash{from{opacity:.85}to{opacity:0}}
+@keyframes zap{0%{transform:scale(.3) rotate(-20deg);opacity:0}60%{transform:scale(1.15) rotate(4deg);opacity:1}100%{transform:none}}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}#fx svg.zap path{stroke-dashoffset:0}#fx:before{opacity:0}}
+@media (min-width:700px){#main{padding-left:20px;padding-right:20px}}
+
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<header id="top"></header>
+<main id="main"></main>
+<nav id="tabs"></nav>
+<div id="layer" class="hidden"></div>
+<div id="sheet" class="hidden"></div>
+<div id="flash"></div>
+<div id="fx" class="hidden"></div>
+<div id="toasts"></div>
+<input type="file" id="fileIn" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" tabindex="-1" aria-hidden="true">
+<input type="file" id="bakIn" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" tabindex="-1" aria-hidden="true">
+<input type="file" id="imgIn" accept="image/*" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" tabindex="-1" aria-hidden="true">
+<noscript><p style="padding:40px 20px;color:#fff">STUDY.LOG braucht JavaScript.</p></noscript>
+<script>
+/* =====================================================================
+   STUDY.LOG – Logik (ohne DOM). ES5, damit es auch auf älteren iPhones läuft.
+   ===================================================================== */
+var APP_VERSION = '1.0.0';
+var STORE_KEY = 'studylog_v1_state';
+var SCHEMA = 1;
+var XP_CARD = 10, XP_DECK = 50, XP_ALL = 100;
+var MASTER_STAGE = 5;
+
+var NEWS = [
+  { v: '1.0.0', date: '12.11.2026', items: [
+    'Kartenstapel mit Stufen-System: Stufe n heißt alle n Tage. Falsch = zurück auf Stufe 1, die Karte kommt am Ende der Runde nochmal.',
+    'Import von Kartenstapeln aus Chats – als Datei oder Text zum Einfügen.',
+    'Formeln in LaTeX-Schreibweise, Skizzen und Fotos auf Karten.',
+    'Prüfungstermin je Stapel mit Countdown.',
+    'Level, Titel, Lernserie mit Wochen-Joker und Erfolge.',
+    'Statistik, Freies Üben und Backup.'
+  ] }
+];
+
+/* ---------- Grundlagen ---------- */
+function now() { return Date.now(); }
+function uid() { return now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function clone(o) { return (o === undefined || o === null) ? o : JSON.parse(JSON.stringify(o)); }
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+function escH(s) {
+  return String(s === undefined || s === null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function fmtNum(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+function cleanName(s) { return String(s || '').replace(/\s+/g, ' ').trim().slice(0, 80); }
+function normKey(s) { return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+
+/* ---------- Datum (Tageswechsel um dayStartHour Uhr) ---------- */
+function dayKeyOf(ts, startHour) {
+  var d = new Date(ts - (startHour || 0) * 3600000);
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
+function today() { return dayKeyOf(now(), S ? S.settings.dayStartHour : 3); }
+function keyToUTC(k) { var p = k.split('-'); return Date.UTC(+p[0], +p[1] - 1, +p[2]); }
+function utcToKey(t) { var d = new Date(t); return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate()); }
+function addDays(k, n) { return utcToKey(keyToUTC(k) + n * 86400000); }
+function daysBetween(a, b) { return Math.round((keyToUTC(b) - keyToUTC(a)) / 86400000); }
+function isDayKey(k) { return typeof k === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(k) && utcToKey(keyToUTC(k)) === k; }
+function fmtDay(k) { var p = k.split('-'); return p[2] + '.' + p[1] + '.' + p[0]; }
+var WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+function weekdayShort(k) { return WD[new Date(keyToUTC(k)).getUTCDay()]; }
+function weekKey(k) {
+  var t = new Date(keyToUTC(k));
+  var dow = (t.getUTCDay() + 6) % 7;
+  t.setUTCDate(t.getUTCDate() - dow + 3);
+  var y = t.getUTCFullYear();
+  var f = new Date(Date.UTC(y, 0, 4));
+  f.setUTCDate(f.getUTCDate() - ((f.getUTCDay() + 6) % 7) + 3);
+  return y + '-W' + pad2(1 + Math.round((t - f) / 604800000));
+}
+
+/* ---------- Zustand ---------- */
+var S = null;
+function def() {
+  return {
+    schema: SCHEMA,
+    createdAt: now(),
+    profile: { form: null },
+    settings: { newPerDay: 25, dayStartHour: 3 },
+    decks: [],
+    cards: [],
+    xp: 0,
+    totals: { answers: 0, correct: 0, wrong: 0, imports: 0, sketches: 0, undos: 0 },
+    days: {},
+    streak: { count: 0, best: 0, lastDay: null, lastSettled: null, jokers: [] },
+    ach: {},
+    lastBackup: 0,
+    seenVersion: null
+  };
+}
+function fillDefaults(base, saved) {
+  if (!saved || typeof saved !== 'object') return base;
+  for (var k in base) {
+    if (!base.hasOwnProperty(k)) continue;
+    if (!(k in saved) || saved[k] === undefined) saved[k] = base[k];
+    else if (base[k] && typeof base[k] === 'object' && !Array.isArray(base[k]) &&
+             saved[k] && typeof saved[k] === 'object' && !Array.isArray(saved[k])) fillDefaults(base[k], saved[k]);
+  }
+  return saved;
+}
+function migrate(st) {
+  /* künftige Schema-Migrationen hier einfügen (if (st.schema < 2) {...}) */
+  st.schema = SCHEMA;
+  for (var i = 0; i < st.cards.length; i++) ensureProg(st.cards[i]);
+  return st;
+}
+function load() {
+  var raw = null, st = null;
+  try { raw = localStorage.getItem(STORE_KEY); } catch (e) { raw = null; }
+  if (raw) { try { st = JSON.parse(raw); } catch (e2) { st = null; } }
+  S = st ? migrate(fillDefaults(def(), st)) : def();
+  return S;
+}
+var lastSaveOk = true;
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); lastSaveOk = true; }
+  catch (e) { lastSaveOk = false; }
+  return lastSaveOk;
+}
+
+/* ---------- Stapel & Karten ---------- */
+var TYPES = { frage: 'Frage', formel: 'Formel', zeichen: 'Formelzeichen', these: 'These' };
+var TYPE_ORDER = ['frage', 'formel', 'zeichen', 'these'];
+function normType(t) {
+  t = normKey(t);
+  if (TYPES[t]) return t;
+  if (t === 'formelzeichen' || t === 'symbol' || t === 'zeichen' || t === 'größe' || t === 'groesse') return 'zeichen';
+  if (t === 'formula' || t === 'gleichung') return 'formel';
+  if (t === 'thesis' || t === 'aussage' || t === 'behauptung' || t === 'statement') return 'these';
+  return 'frage';
+}
+function liveDecks() { var r = []; for (var i = 0; i < S.decks.length; i++) if (!S.decks[i].deleted) r.push(S.decks[i]); return r; }
+function getDeck(id) { for (var i = 0; i < S.decks.length; i++) if (S.decks[i].id === id) return S.decks[i]; return null; }
+function getCard(id) { for (var i = 0; i < S.cards.length; i++) if (S.cards[i].id === id) return S.cards[i]; return null; }
+function deckCards(id) { var r = []; for (var i = 0; i < S.cards.length; i++) { var c = S.cards[i]; if (!c.deleted && c.deckId === id) r.push(c); } return r; }
+function liveCards() {
+  var ok = {}, r = [], ds = liveDecks(), i;
+  for (i = 0; i < ds.length; i++) ok[ds[i].id] = 1;
+  for (i = 0; i < S.cards.length; i++) if (!S.cards[i].deleted && ok[S.cards[i].deckId]) r.push(S.cards[i]);
+  return r;
+}
+function addDeck(name, opt) {
+  opt = opt || {};
+  var t = now();
+  var d = { id: uid(), name: cleanName(name) || 'Neuer Stapel', desc: String(opt.desc || ''),
+            examDate: isDayKey(opt.examDate) ? opt.examDate : null, examRepeat: true,
+            createdAt: t, updatedAt: t, deleted: false, deletedAt: null };
+  S.decks.push(d);
+  return d;
+}
+function updateDeck(d, data) {
+  if ('name' in data) d.name = cleanName(data.name) || d.name;
+  if ('desc' in data) d.desc = String(data.desc || '');
+  if ('examDate' in data) d.examDate = isDayKey(data.examDate) ? data.examDate : null;
+  if ('examRepeat' in data) d.examRepeat = !!data.examRepeat;
+  d.updatedAt = now();
+}
+function deleteDeck(d) {
+  var t = now(), cs = deckCards(d.id);
+  d.deleted = true; d.deletedAt = t; d.updatedAt = t;
+  for (var i = 0; i < cs.length; i++) { cs[i].deleted = true; cs[i].deletedAt = t; cs[i].updatedAt = t; }
+}
+function newProg() { return { stage: 0, due: null, last: null, first: null, relearn: false, reps: 0, lapses: 0, best: 0, seen: false }; }
+function ensureProg(c) {
+  if (!c.prog) c.prog = {};
+  if (!c.prog.f) c.prog.f = newProg();
+  if (c.both && !c.prog.r) c.prog.r = newProg();
+}
+function addCard(deckId, data) {
+  var t = now();
+  var c = { id: uid(), deckId: deckId, type: normType(data.type), front: String(data.front || ''), back: String(data.back || ''),
+            both: !!data.both, mFront: data.mFront || null, mBack: data.mBack || null, prog: null,
+            createdAt: t, updatedAt: t, deleted: false, deletedAt: null };
+  ensureProg(c);
+  S.cards.push(c);
+  return c;
+}
+function updateCard(c, data) {
+  var keys = ['type', 'front', 'back', 'both', 'mFront', 'mBack'];
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    if (!(k in data)) continue;
+    if (k === 'type') c.type = normType(data.type);
+    else if (k === 'both') c.both = !!data.both;
+    else if (k === 'front' || k === 'back') c[k] = String(data[k] || '');
+    else c[k] = data[k] || null;
+  }
+  ensureProg(c);
+  c.updatedAt = now();
+}
+function deleteCard(c) { var t = now(); c.deleted = true; c.deletedAt = t; c.updatedAt = t; }
+function cardDirs(c) { return c.both ? ['f', 'r'] : ['f']; }
+
+/* ---------- Tagesdaten ---------- */
+function blankDay() {
+  return { answers: 0, correct: 0, wrong: 0, reask: 0, xp: 0, newIntro: {}, deckAns: {}, deckWrong: {},
+           decksDone: [], allDone: false, joker: false };
+}
+function getDay(t) {
+  if (!S.days[t]) S.days[t] = blankDay();
+  return fillDefaults(blankDay(), S.days[t]);
+}
+function newIntroduced(deckId, t) { var d = S.days[t]; return (d && d.newIntro && d.newIntro[deckId]) || 0; }
+
+/* ---------- Abfrage-Logik ----------
+   Stufe n = Abstand n Tage. Neu → richtig: Stufe 1 (morgen). Richtig: +1 Stufe.
+   Falsch: zurück auf Stufe 1 (morgen) und am Ende der Runde nochmal (relearn).        */
+function itemStatus(c, dir, t) {
+  var p = c.prog[dir];
+  if (!p) return 'none';
+  if (!p.seen) {
+    if (dir === 'r') { var f = c.prog.f; if (!f.seen || !f.first || f.first >= t) return 'wait'; }
+    return 'new';
+  }
+  if (p.last === t) return p.relearn ? 'relearn' : 'done';
+  if (p.due && p.due <= t) return 'due';
+  return 'later';
+}
+function deckQueue(deck, t) {
+  t = t || today();
+  var cs = deckCards(deck.id), due = [], relearn = [], fresh = [];
+  for (var i = 0; i < cs.length; i++) {
+    var dirs = cardDirs(cs[i]);
+    for (var j = 0; j < dirs.length; j++) {
+      var st = itemStatus(cs[i], dirs[j], t), it = { c: cs[i], dir: dirs[j] };
+      if (st === 'due') due.push(it);
+      else if (st === 'relearn') relearn.push(it);
+      else if (st === 'new') fresh.push(it);
+    }
+  }
+  var quota = Math.max(0, S.settings.newPerDay - newIntroduced(deck.id, t));
+  var newAvail = fresh.length;
+  fresh = fresh.slice(0, quota);
+  return { due: due, relearn: relearn, fresh: fresh, total: due.length + relearn.length + fresh.length, newAvail: newAvail };
+}
+function shuffle(a) {
+  for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; }
+  return a;
+}
+function buildSession(deck, t) {
+  var q = deckQueue(deck, t);
+  var due = shuffle(q.due.slice());
+  due.sort(function (a, b) { return a.c.prog[a.dir].stage - b.c.prog[b.dir].stage; });
+  return shuffle(q.relearn.slice()).concat(due, q.fresh);
+}
+function buildPractice(deck) {
+  var r = [], cs = deckCards(deck.id);
+  for (var i = 0; i < cs.length; i++) { r.push({ c: cs[i], dir: 'f' }); if (cs[i].both) r.push({ c: cs[i], dir: 'r' }); }
+  return shuffle(r);
+}
+/* Prüfung: Fällt eine Karte hinter den Prüfungstermin, kommt sie am Vortag noch einmal. */
+function capDue(deck, due, t) {
+  if (!deck || !deck.examDate || !deck.examRepeat) return due;
+  var last = addDays(deck.examDate, -1);
+  if (last > t && due > last) return last;
+  return due;
+}
+function allClear(t) { var ds = liveDecks(); for (var i = 0; i < ds.length; i++) if (deckQueue(ds[i], t).total > 0) return false; return true; }
+function openTotal(t) { var n = 0, ds = liveDecks(); for (var i = 0; i < ds.length; i++) n += deckQueue(ds[i], t).total; return n; }
+
+function answerItem(it, ok, t) {
+  t = t || today();
+  settleStreak(t);
+  var c = it.c, p = c.prog[it.dir], deck = getDeck(c.deckId), day = getDay(t);
+  var res = { first: p.last !== t, wasNew: !p.seen, ok: !!ok, xp: 0, events: [], ach: [], levelBefore: levelOf(S.xp) };
+  if (!p.seen) { p.seen = true; p.first = t; day.newIntro[c.deckId] = (day.newIntro[c.deckId] || 0) + 1; }
+  if (res.first) {
+    p.reps++;
+    if (ok) { p.stage = p.stage + 1; p.relearn = false; }
+    else { if (!res.wasNew && p.stage > 0) p.lapses++; p.stage = 1; p.relearn = true; }
+    p.due = capDue(deck, addDays(t, p.stage), t);
+    if (p.stage > p.best) p.best = p.stage;
+    res.xp = XP_CARD;
+    day.answers++;
+    if (ok) day.correct++; else day.wrong++;
+    day.deckAns[c.deckId] = (day.deckAns[c.deckId] || 0) + 1;
+    if (!ok) day.deckWrong[c.deckId] = (day.deckWrong[c.deckId] || 0) + 1;
+    S.totals.answers++;
+    if (ok) S.totals.correct++; else S.totals.wrong++;
+  } else {
+    day.reask++;
+    if (ok) p.relearn = false;
+  }
+  p.last = t;
+  c.updatedAt = now();
+  S.xp += res.xp; day.xp += res.xp;
+  if (deck && day.decksDone.indexOf(deck.id) < 0 && deckQueue(deck, t).total === 0) {
+    day.decksDone.push(deck.id);
+    S.xp += XP_DECK; day.xp += XP_DECK; res.xp += XP_DECK; res.events.push('deck');
+    if ((day.deckAns[deck.id] || 0) >= 10 && !day.deckWrong[deck.id]) res.events.push('flawless');
+    if (!day.allDone && allClear(t)) {
+      day.allDone = true;
+      S.xp += XP_ALL; day.xp += XP_ALL; res.xp += XP_ALL; res.events.push('all');
+      streakHit(t);
+    }
+  }
+  res.levelAfter = levelOf(S.xp);
+  res.ach = checkAch({ item: it, events: res.events });
+  return res;
+}
+function snapshot(it, t) {
+  return { cid: it.c.id, dir: it.dir, prog: clone(it.c.prog[it.dir]), xp: S.xp, t: t,
+           day: clone(S.days[t] || null), totals: clone(S.totals), streak: clone(S.streak) };
+}
+function restoreSnapshot(sn) {
+  var c = getCard(sn.cid);
+  if (c) { c.prog[sn.dir] = sn.prog; c.updatedAt = now(); }
+  S.xp = sn.xp;
+  if (sn.day) S.days[sn.t] = sn.day; else delete S.days[sn.t];
+  S.totals = sn.totals;
+  S.totals.undos = (S.totals.undos || 0) + 1;
+  S.streak = sn.streak;
+}
+
+/* ---------- Serie & Joker ---------- */
+function streakHit(t) {
+  var st = S.streak;
+  st.count++;
+  if (st.count > st.best) st.best = st.count;
+  st.lastDay = t;
+}
+function anyDue(d) { var ds = liveDecks(); for (var i = 0; i < ds.length; i++) if (deckQueue(ds[i], d).total > 0) return true; return false; }
+/* Wertet alle vergangenen, noch nicht abgerechneten Tage aus.
+   Ein Tag mit offenen Karten, der nicht erledigt wurde, kostet den Wochen-Joker oder die Serie.
+   Tage ohne fällige Karten sind neutral.                                              */
+function settleStreak(t) {
+  var st = S.streak, res = { broken: false, joker: false };
+  if (!st.lastSettled) { st.lastSettled = addDays(t, -1); return res; }
+  var d = addDays(st.lastSettled, 1), guard = 0;
+  while (d < t && guard < 3700) {
+    guard++;
+    var rec = S.days[d];
+    if (!(rec && rec.allDone) && anyDue(d)) {
+      var wk = weekKey(d);
+      if (st.count > 0 && st.jokers.indexOf(wk) < 0) { st.jokers.push(wk); getDay(d).joker = true; res.joker = true; }
+      else if (st.count > 0) { st.count = 0; res.broken = true; }
+    }
+    st.lastSettled = d;
+    d = addDays(d, 1);
+  }
+  if (st.jokers.length > 30) st.jokers = st.jokers.slice(-30);
+  return res;
+}
+function jokerFree(t) { return S.streak.jokers.indexOf(weekKey(t)) < 0; }
+
+/* ---------- Level & Titel ---------- */
+function xpForLevel(l) { return 150 * (l - 1) * l; }
+function levelOf(xp) { var l = 1; while (xpForLevel(l + 1) <= xp) l++; return l; }
+var TITLES = [
+  [1, 'Azubi', 'Azubi'],
+  [3, 'Kabelzieher', 'Kabelzieherin'],
+  [5, 'Elektroniker', 'Elektronikerin'],
+  [8, 'Geselle', 'Gesellin'],
+  [11, 'Schaltschrankbauer', 'Schaltschrankbauerin'],
+  [14, 'SPS-Programmierer', 'SPS-Programmiererin'],
+  [17, 'Inbetriebnehmer', 'Inbetriebnehmerin'],
+  [20, 'Vorarbeiter', 'Vorarbeiterin'],
+  [24, 'Meister', 'Meisterin'],
+  [28, 'Techniker', 'Technikerin'],
+  [32, 'Staatlich geprüfter Techniker', 'Staatlich geprüfte Technikerin'],
+  [36, 'Leitwartenchef', 'Leitwartenchefin'],
+  [40, 'Netzbetriebsleiter', 'Netzbetriebsleiterin'],
+  [45, 'Kraftwerksleiter', 'Kraftwerksleiterin'],
+  [50, 'Hochspannungslegende', 'Hochspannungslegende'],
+  [60, 'Blitzbändiger', 'Blitzbändigerin']
+];
+function titleIndex(level) { var k = 0; for (var i = 0; i < TITLES.length; i++) if (TITLES[i][0] <= level) k = i; return k; }
+function titleFor(level, form) { var t = TITLES[titleIndex(level)]; return form === 'w' ? t[2] : t[1]; }
+
+/* ---------- Statistik ---------- */
+function deckStats(deck, t) {
+  t = t || today();
+  var cs = deckCards(deck.id), tm = addDays(t, 1);
+  var s = { cards: cs.length, items: 0, fresh: 0, low: 0, mid: 0, high: 0, tomorrow: 0, pct: 0 };
+  for (var i = 0; i < cs.length; i++) {
+    var dirs = cardDirs(cs[i]);
+    for (var j = 0; j < dirs.length; j++) {
+      var p = cs[i].prog[dirs[j]];
+      s.items++;
+      if (!p.seen) s.fresh++;
+      else if (p.stage >= MASTER_STAGE) s.high++;
+      else if (p.stage >= 3) s.mid++;
+      else s.low++;
+      if (itemStatus(cs[i], dirs[j], tm) === 'due') s.tomorrow++;
+    }
+  }
+  s.pct = s.items ? Math.round(100 * s.high / s.items) : 0;
+  return s;
+}
+function forecast(t, n) {
+  var out = [], cs = liveCards(), k, i, j;
+  for (k = 0; k < n; k++) out.push(0);
+  out[0] = openTotal(t);
+  for (i = 0; i < cs.length; i++) {
+    var dirs = cardDirs(cs[i]);
+    for (j = 0; j < dirs.length; j++) {
+      var p = cs[i].prog[dirs[j]];
+      if (!p.seen || !p.due) continue;
+      var dd = daysBetween(t, p.due);
+      if (dd >= 1 && dd < n) out[dd]++;
+    }
+  }
+  return out;
+}
+
+/* ---------- Erfolge ---------- */
+function hasEv(ctx, e) { return !!(ctx.events && ctx.events.indexOf(e) >= 0); }
+function itemProg(ctx) { return ctx.item ? ctx.item.c.prog[ctx.item.dir] : null; }
+function examReady() {
+  var ds = liveDecks(), t = today();
+  for (var i = 0; i < ds.length; i++) {
+    var d = ds[i];
+    if (!d.examDate || d.examDate < t) continue;
+    var cs = deckCards(d.id), ok = cs.length >= 5;
+    for (var j = 0; ok && j < cs.length; j++) {
+      var dirs = cardDirs(cs[j]);
+      for (var k = 0; k < dirs.length; k++) if (cs[j].prog[dirs[k]].stage < 3) { ok = false; break; }
+    }
+    if (ok) return true;
+  }
+  return false;
+}
+var ACH = [
+  { id: 'first_deck', i: 'cards', n: 'Netzanschluss', d: 'Ersten Stapel angelegt', f: function () { return S.decks.length >= 1; } },
+  { id: 'first_import', i: 'import', n: 'Einspeisung', d: 'Erste Kartendatei importiert', f: function () { return S.totals.imports >= 1; } },
+  { id: 'first_answer', i: 'bolt', n: 'Erster Funke', d: 'Erste Karte beantwortet', f: function () { return S.totals.answers >= 1; } },
+  { id: 'a100', i: 'bolt', n: '100 Volt', d: '100 Karten beantwortet', f: function () { return S.totals.answers >= 100; } },
+  { id: 'a1000', i: 'bolt', n: '1 Kilovolt', d: '1.000 Karten beantwortet', f: function () { return S.totals.answers >= 1000; } },
+  { id: 'a10000', i: 'bolt', n: '10 Kilovolt', d: '10.000 Karten beantwortet', f: function () { return S.totals.answers >= 10000; } },
+  { id: 'deck_done', i: 'check', n: 'Stromkreis geschlossen', d: 'Einen Stapel an einem Tag komplett geschafft', f: function (x) { return hasEv(x, 'deck'); } },
+  { id: 'all_done', i: 'cup', n: 'Volle Ladung', d: 'Alle Stapel an einem Tag geschafft', f: function (x) { return hasEv(x, 'all'); } },
+  { id: 'flawless', i: 'star', n: 'Fehlerstromfrei', d: 'Einen Stapel mit mind. 10 Karten ohne Fehler geschafft', f: function (x) { return hasEv(x, 'flawless'); } },
+  { id: 's3', i: 'flame', n: 'Anlaufstrom', d: '3 Tage Serie', f: function () { return S.streak.best >= 3; } },
+  { id: 's7', i: 'flame', n: 'Dauerbetrieb', d: '7 Tage Serie', f: function () { return S.streak.best >= 7; } },
+  { id: 's30', i: 'flame', n: 'Grundlast', d: '30 Tage Serie', f: function () { return S.streak.best >= 30; } },
+  { id: 's100', i: 'flame', n: 'Netzstabil', d: '100 Tage Serie', f: function () { return S.streak.best >= 100; } },
+  { id: 'decks5', i: 'cards', n: 'Verteilerkasten', d: '5 Stapel gleichzeitig', f: function () { return liveDecks().length >= 5; } },
+  { id: 'cards500', i: 'cards', n: 'Pumpspeicher', d: '500 Karten in der Sammlung', f: function () { return liveCards().length >= 500; } },
+  { id: 'stage10', i: 'star', n: 'Langzeitspeicher', d: 'Eine Karte hat Stufe 10 erreicht', f: function (x) { var p = itemProg(x); return !!p && p.stage >= 10; } },
+  { id: 'stage20', i: 'star', n: 'Supraleiter', d: 'Eine Karte hat Stufe 20 erreicht', f: function (x) { var p = itemProg(x); return !!p && p.stage >= 20; } },
+  { id: 'sketch', i: 'edit', n: 'Schaltplan', d: 'Erste Skizze gezeichnet', f: function () { return S.totals.sketches >= 1; } },
+  { id: 'exam', i: 'cal', n: 'Countdown', d: 'Ersten Prüfungstermin eingetragen', f: function () { for (var i = 0; i < S.decks.length; i++) if (S.decks[i].examDate) return true; return false; } },
+  { id: 'exam_ready', i: 'cup', n: 'Prüfungsreif', d: 'Vor der Prüfung jede Karte eines Stapels auf mind. Stufe 3', f: function (x) { return !!x.item && examReady(); } },
+  { id: 'comeback', h: true, i: 'undo', n: 'Comeback', d: 'Eine Karte, die schon mal falsch war, auf Stufe 5 gebracht', f: function (x) { var p = itemProg(x); return !!p && p.lapses > 0 && p.stage >= 5; } },
+  { id: 'joker', h: true, i: 'shield', n: 'Sicherung hält', d: 'Deine Serie wurde vom Joker gerettet', f: function (x) { return !!x.joker; } },
+  { id: 'pi', h: true, i: 'star', n: 'π mal Daumen', d: 'Genau 314 Karten beantwortet', f: function () { return S.totals.answers === 314; } },
+  { id: 'undo', h: true, i: 'undo', n: 'Strg + Z', d: 'Eine Antwort rückgängig gemacht', f: function () { return S.totals.undos >= 1; } }
+];
+function checkAch(ctx) {
+  ctx = ctx || {};
+  var got = [];
+  for (var i = 0; i < ACH.length; i++) {
+    var a = ACH[i], ok = false;
+    if (S.ach[a.id]) continue;
+    try { ok = a.f(ctx); } catch (e) { ok = false; }
+    if (ok) { S.ach[a.id] = now(); got.push(a); }
+  }
+  return got;
+}
+
+/* ---------- Mini-LaTeX → HTML ---------- */
+var TEX_GREEK = { alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ε', varepsilon: 'ε', zeta: 'ζ', eta: 'η', theta: 'θ', vartheta: 'ϑ',
+  iota: 'ι', kappa: 'κ', lambda: 'λ', mu: 'μ', nu: 'ν', xi: 'ξ', pi: 'π', varpi: 'ϖ', rho: 'ρ', varrho: 'ϱ', sigma: 'σ', varsigma: 'ς',
+  tau: 'τ', upsilon: 'υ', phi: 'φ', varphi: 'φ', chi: 'χ', psi: 'ψ', omega: 'ω',
+  Gamma: 'Γ', Delta: 'Δ', Theta: 'Θ', Lambda: 'Λ', Xi: 'Ξ', Pi: 'Π', Sigma: 'Σ', Upsilon: 'Υ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω' };
+var TEX_SYM = { cdot: ['·', 'b'], times: ['×', 'b'], div: ['÷', 'b'], pm: ['±', 'b'], mp: ['∓', 'b'], ast: ['∗', 'b'], circ: ['∘', ''],
+  bullet: ['•', 'b'], oplus: ['⊕', 'b'], otimes: ['⊗', 'b'], land: ['∧', 'b'], lor: ['∨', 'b'], wedge: ['∧', 'b'], vee: ['∨', 'b'],
+  approx: ['≈', 'r'], neq: ['≠', 'r'], ne: ['≠', 'r'], leq: ['≤', 'r'], le: ['≤', 'r'], geq: ['≥', 'r'], ge: ['≥', 'r'],
+  ll: ['≪', 'r'], gg: ['≫', 'r'], equiv: ['≡', 'r'], sim: ['∼', 'r'], simeq: ['≃', 'r'], cong: ['≅', 'r'], propto: ['∝', 'r'],
+  to: ['→', 'r'], rightarrow: ['→', 'r'], leftarrow: ['←', 'r'], Rightarrow: ['⇒', 'r'], Leftarrow: ['⇐', 'r'],
+  leftrightarrow: ['↔', 'r'], Leftrightarrow: ['⇔', 'r'], iff: ['⇔', 'r'], implies: ['⇒', 'r'], mapsto: ['↦', 'r'],
+  uparrow: ['↑', ''], downarrow: ['↓', ''], in: ['∈', 'r'], notin: ['∉', 'r'], subset: ['⊂', 'r'], subseteq: ['⊆', 'r'],
+  perp: ['⊥', 'r'], parallel: ['∥', 'r'], mid: ['|', 'r'],
+  infty: ['∞', ''], partial: ['∂', ''], nabla: ['∇', ''], sum: ['∑', ''], prod: ['∏', ''], int: ['∫', ''], iint: ['∬', ''], oint: ['∮', ''],
+  angle: ['∠', ''], degree: ['°', ''], ldots: ['…', ''], cdots: ['⋯', ''], dots: ['…', ''], vdots: ['⋮', ''], forall: ['∀', ''], exists: ['∃', ''],
+  neg: ['¬', ''], lnot: ['¬', ''], emptyset: ['∅', ''], hbar: ['ℏ', ''], ell: ['ℓ', ''], prime: ['′', ''], triangle: ['△', ''],
+  langle: ['⟨', ''], rangle: ['⟩', ''], lvert: ['|', ''], rvert: ['|', ''], vert: ['|', ''], Vert: ['‖', ''], lfloor: ['⌊', ''], rfloor: ['⌋', ''],
+  lceil: ['⌈', ''], rceil: ['⌉', ''], checkmark: ['✓', ''], ohm: ['Ω', ''], micro: ['µ', ''], textdegree: ['°', ''], euro: ['€', ''] };
+var TEX_FN = { sin: 1, cos: 1, tan: 1, cot: 1, arcsin: 1, arccos: 1, arctan: 1, sinh: 1, cosh: 1, tanh: 1, ln: 1, log: 1, lg: 1, exp: 1,
+  max: 1, min: 1, lim: 1, det: 1, sgn: 1, arg: 1, Re: 1, Im: 1, mod: 1, rms: 1 };
+var TEX_CMDS = ['frac', 'dfrac', 'tfrac', 'cfrac', 'sqrt', 'text', 'textrm', 'textbf', 'textit', 'mathrm', 'mathbf', 'mathit', 'operatorname',
+  'vec', 'hat', 'bar', 'overline', 'underline', 'tilde', 'dot', 'ddot', 'overset', 'underset', 'stackrel', 'left', 'right', 'quad', 'qquad',
+  'Delta', 'unit', 'mathcal', 'boldsymbol', 'displaystyle', 'overrightarrow', 'widehat'];
+
+function texToHtml(src) {
+  src = String(src || '');
+  var i = 0, n = src.length, up = 0, depth = 0;
+  function sp() { while (i < n && /\s/.test(src.charAt(i))) i++; }
+  function rawGroup() {
+    sp();
+    if (src.charAt(i) !== '{') return '';
+    var lvl = 0, start = i + 1;
+    for (; i < n; i++) {
+      var ch = src.charAt(i);
+      if (ch === '\\') { i++; continue; }
+      if (ch === '{') lvl++;
+      else if (ch === '}') { lvl--; if (lvl === 0) break; }
+    }
+    var txt = src.slice(start, i);
+    i++;
+    return escH(txt.replace(/\\([{}%$&#_ ])/g, '$1'));
+  }
+  function single(c) {
+    if (/[A-Za-z]/.test(c)) return up ? c : '<i>' + c + '</i>';
+    if (c === '~') return '&nbsp;';
+    if (c === '=' || c === '<' || c === '>') return '<span class="mr">' + escH(c) + '</span>';
+    if (c === '+') return '<span class="mb">+</span>';
+    if (c === '-' || c === '−') return '<span class="mb">−</span>';
+    if (c === '*') return '<span class="mb">·</span>';
+    if (c === '·' || c === '×') return '<span class="mb">' + c + '</span>';
+    if (c === '≈' || c === '≠' || c === '≤' || c === '≥' || c === '→') return '<span class="mr">' + c + '</span>';
+    return escH(c);
+  }
+  function acc(base, mark, cls) {
+    return '<span class="ma ' + cls + '"><span class="ma-t">' + mark + '</span>' + base + '</span>';
+  }
+  function scripts(b, sub, sup) {
+    if (sub === null && sup === null) return b;
+    if (sub !== null && sup !== null) return b + '<span class="mss"><span>' + sup + '</span><span>' + sub + '</span></span>';
+    if (sup !== null) return b + '<sup class="msp">' + sup + '</sup>';
+    return b + '<sub class="msb">' + sub + '</sub>';
+  }
+  function arg() {
+    sp();
+    if (i >= n) return '';
+    var c = src.charAt(i);
+    if (c === '{') { i++; var r = group('}'); i++; return r; }
+    if (c === '\\') return command();
+    i++;
+    return single(c);
+  }
+  function atom() {
+    var c = src.charAt(i);
+    if (c === '{') { i++; var r = group('}'); i++; return r; }
+    if (c === '\\') return command();
+    if (c === '^' || c === '_') return '';
+    i++;
+    if (/\s/.test(c)) return '';
+    return single(c);
+  }
+  function command() {
+    i++;
+    if (i >= n) return '\\';
+    var c = src.charAt(i);
+    if (!/[A-Za-z]/.test(c)) {
+      i++;
+      if (c === ',') return '<span class="s1"></span>';
+      if (c === ';' || c === ':' || c === '>') return '<span class="s2"></span>';
+      if (c === ' ') return '&nbsp;';
+      if (c === '!') return '';
+      if (c === '\\') return '<br>';
+      if (c === '|') return '‖';
+      return escH(c);
+    }
+    var m = /^[A-Za-z]+/.exec(src.slice(i))[0];
+    i += m.length;
+    var a, b, r;
+    switch (m) {
+      case 'frac': case 'dfrac': case 'tfrac': case 'cfrac':
+        a = arg(); b = arg();
+        return '<span class="mf"><span class="mfn">' + a + '</span><span class="mfd">' + b + '</span></span>';
+      case 'sqrt':
+        sp();
+        var ix = '';
+        if (src.charAt(i) === '[') { i++; ix = group(']'); i++; }
+        r = arg();
+        return '<span class="mq">' + (ix ? '<span class="mqi">' + ix + '</span>' : '') + '<span class="mqs">√</span><span class="mqr">' + r + '</span></span>';
+      case 'text': case 'textrm': case 'textnormal': case 'textup': case 'mbox': case 'textit': case 'textsf':
+        return '<span class="mt">' + rawGroup() + '</span>';
+      case 'textbf':
+        return '<span class="mt"><b>' + rawGroup() + '</b></span>';
+      case 'mathrm': case 'operatorname': case 'mathup': case 'rm': case 'mathsf': case 'mathtt': case 'unit': case 'si':
+        up++; r = arg(); up--;
+        return '<span class="mu">' + r + '</span>';
+      case 'mathbf': case 'bf': case 'boldsymbol': case 'bm':
+        return '<b>' + arg() + '</b>';
+      case 'mathit': case 'mathcal': case 'mathbb': case 'mathscr': case 'mathfrak': case 'displaystyle': case 'textstyle':
+        return m === 'displaystyle' || m === 'textstyle' ? '' : arg();
+      case 'vec': case 'overrightarrow': return acc(arg(), '→', 'av');
+      case 'hat': case 'widehat': return acc(arg(), '^', 'ah');
+      case 'tilde': case 'widetilde': return acc(arg(), '~', 'ah');
+      case 'dot': return acc(arg(), '˙', 'ah');
+      case 'ddot': return acc(arg(), '¨', 'ah');
+      case 'bar': case 'overline': return '<span class="mo">' + arg() + '</span>';
+      case 'underline': case 'ul': return '<span class="ml">' + arg() + '</span>';
+      case 'overset': case 'stackrel': a = arg(); b = arg(); return acc(b, a, 'ao');
+      case 'underset': a = arg(); b = arg(); return '<span class="mus">' + b + '<span class="mus-b">' + a + '</span></span>';
+      case 'left': case 'right': case 'middle': case 'big': case 'Big': case 'bigg': case 'Bigg': case 'bigl': case 'bigr':
+      case 'Bigl': case 'Bigr': case 'biggl': case 'biggr': case 'Biggl': case 'Biggr':
+        sp(); if (src.charAt(i) === '.') i++;
+        return '';
+      case 'quad': return '<span class="s4"></span>';
+      case 'qquad': return '<span class="s4"></span><span class="s4"></span>';
+      case 'limits': case 'nolimits': return '';
+      case 'begin': case 'end': rawGroup(); return '';
+    }
+    if (TEX_GREEK.hasOwnProperty(m)) { var g = TEX_GREEK[m]; return (/^[a-z]/.test(m) && !up) ? '<i>' + g + '</i>' : g; }
+    if (TEX_SYM.hasOwnProperty(m)) { var s = TEX_SYM[m]; return s[1] ? '<span class="m' + s[1] + '">' + s[0] + '</span>' : s[0]; }
+    if (TEX_FN.hasOwnProperty(m)) return '<span class="mfx">' + m + '</span>';
+    return '<span class="mx">\\' + escH(m) + '</span>';
+  }
+  function group(stop) {
+    var out = '';
+    depth++;
+    if (depth > 40) { var rest = src.slice(i); i = n; depth--; return escH(rest); }
+    while (i < n) {
+      var c = src.charAt(i);
+      if (c === '}') { if (stop === '}') break; i++; continue; }
+      if (stop === ']' && c === ']') break;
+      var base = atom(), sub = null, sup = null, primes = '';
+      for (;;) {
+        var j = i;
+        while (j < n && /\s/.test(src.charAt(j))) j++;
+        var d = src.charAt(j);
+        if (d === '^' && sup === null) { i = j + 1; sup = arg(); }
+        else if (d === '_' && sub === null) {
+          i = j + 1;
+          var wm = /^\s*\{([A-Za-zÄÖÜäöüß]{2,})\}/.exec(src.slice(i, i + 40));
+          if (wm) { i += wm[0].length; sub = '<span class="mu">' + escH(wm[1]) + '</span>'; }
+          else sub = arg();
+        }
+        else if (d === "'") { i = j + 1; primes += '′'; }
+        else break;
+      }
+      out += scripts(base + primes, sub, sup);
+    }
+    depth--;
+    return out;
+  }
+  return group(null);
+}
+function plainText(s) {
+  return escH(s).replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+}
+function renderRich(text, type) {
+  text = String(text || '');
+  if (text.indexOf('$') < 0 && text.indexOf('\\(') < 0 && text.indexOf('\\[') < 0 &&
+      (type === 'formel' || type === 'zeichen') && /\\[A-Za-z]|[\^_]/.test(text)) text = '$' + text + '$';
+  var re = /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\$((?:\\\$|[^$])+?)\$|\\\(([\s\S]+?)\\\)/g;
+  var out = '', last = 0, m;
+  while ((m = re.exec(text))) {
+    out += plainText(text.slice(last, m.index));
+    var disp = (m[1] !== undefined && m[1] !== '') || (m[2] !== undefined && m[2] !== '');
+    var tex = m[1] || m[2] || m[3] || m[4] || '';
+    out += disp ? '<div class="m mdisp">' + texToHtml(tex) + '</div>' : '<span class="m">' + texToHtml(tex) + '</span>';
+    last = re.lastIndex;
+  }
+  out += plainText(text.slice(last));
+  return out;
+}
+
+/* ---------- Import ---------- */
+function pick(o, keys) {
+  for (var i = 0; i < keys.length; i++) if (o[keys[i]] !== undefined && o[keys[i]] !== null) return o[keys[i]];
+  return undefined;
+}
+/* Chats vergessen manchmal, Backslashes in JSON zu verdoppeln ("\frac" statt "\\frac").
+   Bekannte LaTeX-Befehle werden deshalb vor dem Einlesen repariert.                   */
+var LATEX_FIX = (function () {
+  var set = {}, k, i;
+  for (k in TEX_GREEK) if (TEX_GREEK.hasOwnProperty(k)) set[k] = 1;
+  for (k in TEX_SYM) if (TEX_SYM.hasOwnProperty(k)) set[k] = 1;
+  for (k in TEX_FN) if (TEX_FN.hasOwnProperty(k)) set[k] = 1;
+  for (i = 0; i < TEX_CMDS.length; i++) set[TEX_CMDS[i]] = 1;
+  delete set.ne; delete set.to; delete set['in']; delete set.neg; delete set.ni;
+  return set;
+})();
+function fixLatexEscapes(s) {
+  var out = '', i = 0, n = s.length;
+  while (i < n) {
+    var c = s.charAt(i);
+    if (c !== '\\') { out += c; i++; continue; }
+    var nx = s.charAt(i + 1);
+    if (nx === '\\' || nx === '"' || nx === '/') { out += c + nx; i += 2; continue; }
+    var m = /^[A-Za-z]+/.exec(s.slice(i + 1, i + 30));
+    if (m && LATEX_FIX[m[0]]) { out += '\\\\' + m[0]; i += 1 + m[0].length; continue; }
+    out += c; i++;
+  }
+  return out;
+}
+function extractJson(text) {
+  var s = String(text || '').replace(/^﻿/, '').trim();
+  var a = s.indexOf('{'), b = s.indexOf('[');
+  var start = a < 0 ? b : (b < 0 ? a : Math.min(a, b));
+  if (start < 0) return null;
+  var end = Math.max(s.lastIndexOf('}'), s.lastIndexOf(']'));
+  if (end <= start) return null;
+  var body = fixLatexEscapes(s.slice(start, end + 1));
+  try { return JSON.parse(body); }
+  catch (e) {
+    try { return JSON.parse(body.replace(/[“”„]/g, '"').replace(/,\s*([}\]])/g, '$1')); }
+    catch (e2) { return { __error: e.message }; }
+  }
+}
+function normDate(v) {
+  v = String(v || '').trim();
+  if (isDayKey(v)) return v;
+  var m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(v);
+  if (m) { var k = m[3] + '-' + pad2(+m[2]) + '-' + pad2(+m[1]); return isDayKey(k) ? k : null; }
+  return null;
+}
+function sanitizeSvg(s) {
+  if (typeof s !== 'string') return null;
+  var i = s.indexOf('<svg'), j = s.lastIndexOf('</svg>');
+  if (i < 0 || j < i) return null;
+  s = s.slice(i, j + 6)
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '')
+    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(href\s*=\s*["'])\s*(?:javascript|https?|data):[^"']*(["'])/gi, '$1#$2');
+  if (!/xmlns=/.test(s.slice(0, 300))) s = s.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  return s.length > 200000 ? null : s;
+}
+function looksLikeCard(o) { return !!o && typeof o === 'object' && !Array.isArray(o) && pick(o, ['vorne', 'front', 'frage', 'question']) !== undefined; }
+function normCard(k) {
+  if (Array.isArray(k)) { if (k.length >= 2 && String(k[0]).trim() && String(k[1]).trim()) return { type: 'frage', front: String(k[0]).trim(), back: String(k[1]).trim(), both: false, frontSvg: null, backSvg: null }; return null; }
+  if (!k || typeof k !== 'object') return null;
+  var front = pick(k, ['vorne', 'front', 'frage', 'question', 'q']), back = pick(k, ['hinten', 'back', 'antwort', 'answer', 'a']);
+  var fs = sanitizeSvg(pick(k, ['vorneSvg', 'frontSvg', 'svgVorne'])), bs = sanitizeSvg(pick(k, ['hintenSvg', 'backSvg', 'svgHinten']));
+  front = front === undefined ? '' : String(front).trim();
+  back = back === undefined ? '' : String(back).trim();
+  if ((!front && !fs) || (!back && !bs)) return null;
+  var both = pick(k, ['beide', 'both', 'beideRichtungen']);
+  return { type: normType(pick(k, ['typ', 'type', 'art'])), front: front, back: back, both: both === true || both === 'true' || both === 'ja', frontSvg: fs, backSvg: bs };
+}
+function normDeck(d, out) {
+  var name = pick(d, ['stapel', 'name', 'titel', 'title', 'deck']);
+  var deck = { name: cleanName(typeof name === 'string' ? name : '') || 'Importierter Stapel',
+               desc: String(pick(d, ['beschreibung', 'description', 'desc']) || ''), examDate: null, cards: [] };
+  var ex = pick(d, ['pruefung', 'prüfung', 'pruefungstermin', 'examDate', 'exam']);
+  if (ex) { var nd = normDate(ex); if (nd) deck.examDate = nd; else out.warnings.push(deck.name + ': Prüfungstermin „' + ex + '“ nicht erkannt (Format JJJJ-MM-TT).'); }
+  var ks = pick(d, ['karten', 'cards']) || [];
+  if (!Array.isArray(ks)) ks = [];
+  for (var i = 0; i < ks.length; i++) {
+    var c = normCard(ks[i]);
+    if (c) deck.cards.push(c);
+    else out.warnings.push(deck.name + ': Karte ' + (i + 1) + ' übersprungen (Vorder- oder Rückseite fehlt).');
+  }
+  return deck;
+}
+function collectDecks(data, out) {
+  if (Array.isArray(data)) {
+    if (data.length && (looksLikeCard(data[0]) || Array.isArray(data[0]))) out.decks.push(normDeck({ karten: data }, out));
+    else for (var i = 0; i < data.length; i++) collectDecks(data[i], out);
+    return;
+  }
+  if (!data || typeof data !== 'object') return;
+  if (data.format === 'studylog-backup-1') { out.backup = true; return; }
+  var list = pick(data, ['stapelListe', 'decks', 'staple']);
+  if (Array.isArray(list)) { for (var j = 0; j < list.length; j++) collectDecks(list[j], out); return; }
+  if (Array.isArray(data.stapel)) { for (var k = 0; k < data.stapel.length; k++) collectDecks(data.stapel[k], out); return; }
+  if (pick(data, ['karten', 'cards'])) out.decks.push(normDeck(data, out));
+  else if (looksLikeCard(data)) out.decks.push(normDeck({ karten: [data] }, out));
+}
+function parseLines(text) {
+  var lines = String(text).split(/\r?\n/), cards = [];
+  for (var i = 0; i < lines.length; i++) {
+    var l = lines[i], parts = l.indexOf('\t') >= 0 ? l.split('\t') : (l.indexOf(';;') >= 0 ? l.split(';;') : null);
+    if (parts && parts.length >= 2 && parts[0].trim() && parts[1].trim()) cards.push({ type: 'frage', front: parts[0].trim(), back: parts.slice(1).join(' ').trim(), both: false, frontSvg: null, backSvg: null });
+  }
+  return cards.length ? { name: 'Importierter Stapel', desc: '', examDate: null, cards: cards } : null;
+}
+function parseImport(text) {
+  text = String(text || '');
+  var out = { decks: [], warnings: [], error: null, backup: false };
+  var blocks = [], re = /```[a-zA-Z]*\s*([\s\S]*?)```/g, m;
+  while ((m = re.exec(text))) blocks.push(m[1]);
+  if (!blocks.length) blocks.push(text);
+  var lastErr = null;
+  for (var i = 0; i < blocks.length; i++) {
+    var data = extractJson(blocks[i]);
+    if (!data || data.__error) {
+      var ld = parseLines(blocks[i]);
+      if (ld) { out.decks.push(ld); continue; }
+      lastErr = data && data.__error ? 'Fehler im JSON: ' + data.__error : 'Kein Kartenformat erkannt.';
+      continue;
+    }
+    collectDecks(data, out);
+  }
+  if (out.backup && !out.decks.length) out.error = 'Das ist eine STUDY.LOG-Sicherung. Bitte unter „Mehr → Backup wiederherstellen“ laden.';
+  else if (!out.decks.length) out.error = lastErr || 'Keine Karten gefunden.';
+  return out;
+}
+function cardKey(front, back) { var f = normKey(front); return f ? f : '#' + normKey(back); }
+function findDeckByName(name) {
+  var k = normKey(name), ds = liveDecks();
+  for (var i = 0; i < ds.length; i++) if (normKey(ds[i].name) === k) return ds[i];
+  return null;
+}
+/* modes[i]: 'merge' | 'new' | 'skip' (Standard: merge, wenn es einen Stapel mit gleichem Namen gibt) */
+function planImport(parsed, modes) {
+  var plan = [];
+  for (var i = 0; i < parsed.decks.length; i++) {
+    var pd = parsed.decks[i], target = findDeckByName(pd.name);
+    var mode = (modes && modes[i]) || (target ? 'merge' : 'new');
+    if (mode === 'merge' && !target) mode = 'new';
+    var seen = {}, add = [], dup = 0, j;
+    if (mode === 'merge') { var cs = deckCards(target.id); for (j = 0; j < cs.length; j++) seen[cardKey(cs[j].front, cs[j].back)] = 1; }
+    for (j = 0; j < pd.cards.length; j++) {
+      var key = cardKey(pd.cards[j].front, pd.cards[j].back);
+      if (seen[key]) { dup++; continue; }
+      seen[key] = 1;
+      add.push(pd.cards[j]);
+    }
+    plan.push({ src: pd, target: target, mode: mode, add: add, dup: dup });
+  }
+  return plan;
+}
+function applyImport(plan) {
+  var res = { decks: 0, cards: 0, media: [], deckIds: [] };
+  for (var i = 0; i < plan.length; i++) {
+    var p = plan[i];
+    if (p.mode === 'skip' || !p.add.length && p.mode === 'merge') continue;
+    var deck;
+    if (p.mode === 'merge') {
+      deck = p.target;
+      if (p.src.examDate && !deck.examDate) updateDeck(deck, { examDate: p.src.examDate });
+    } else {
+      var nm = p.src.name;
+      if (findDeckByName(nm)) nm = nm + ' (neu)';
+      deck = addDeck(nm, { desc: p.src.desc, examDate: p.src.examDate });
+      res.decks++;
+    }
+    res.deckIds.push(deck.id);
+    for (var j = 0; j < p.add.length; j++) {
+      var c = p.add[j], mf = null, mb = null;
+      if (c.frontSvg) { mf = 'm' + uid(); res.media.push({ id: mf, kind: 'svg', data: c.frontSvg }); }
+      if (c.backSvg) { mb = 'm' + uid(); res.media.push({ id: mb, kind: 'svg', data: c.backSvg }); }
+      addCard(deck.id, { type: c.type, front: c.front, back: c.back, both: c.both, mFront: mf, mBack: mb });
+      res.cards++;
+    }
+  }
+  S.totals.imports++;
+  return res;
+}
+
+/* ---------- Medien (Skizzen, Fotos, SVG) in IndexedDB ---------- */
+var mediaMem = {}, mediaDb = null;
+function mediaInit(cb) {
+  if (typeof indexedDB === 'undefined' || !indexedDB) { if (cb) cb(false); return; }
+  try {
+    var rq = indexedDB.open('studylog_media', 1);
+    rq.onupgradeneeded = function (e) { var db = e.target.result; if (!db.objectStoreNames.contains('media')) db.createObjectStore('media', { keyPath: 'id' }); };
+    rq.onsuccess = function (e) { mediaDb = e.target.result; if (cb) cb(true); };
+    rq.onerror = function () { if (cb) cb(false); };
+  } catch (err) { if (cb) cb(false); }
+}
+function mediaPut(rec, cb) {
+  rec.createdAt = rec.createdAt || now();
+  mediaMem[rec.id] = rec;
+  if (!mediaDb) { if (cb) cb(true); return; }
+  try {
+    var tx = mediaDb.transaction('media', 'readwrite');
+    tx.objectStore('media').put(rec);
+    tx.oncomplete = function () { if (cb) cb(true); };
+    tx.onerror = function () { if (cb) cb(false); };
+  } catch (e) { if (cb) cb(false); }
+}
+function mediaGet(id, cb) {
+  if (!id) { cb(null); return; }
+  if (mediaMem[id]) { cb(mediaMem[id]); return; }
+  if (!mediaDb) { cb(null); return; }
+  try {
+    var rq = mediaDb.transaction('media', 'readonly').objectStore('media').get(id);
+    rq.onsuccess = function () { if (rq.result) mediaMem[id] = rq.result; cb(rq.result || null); };
+    rq.onerror = function () { cb(null); };
+  } catch (e) { cb(null); }
+}
+function mediaDelete(id) {
+  if (!id) return;
+  delete mediaMem[id];
+  if (!mediaDb) return;
+  try { mediaDb.transaction('media', 'readwrite').objectStore('media')['delete'](id); } catch (e) { /* egal */ }
+}
+function mediaAll(cb) {
+  if (!mediaDb) { var l = []; for (var k in mediaMem) if (mediaMem.hasOwnProperty(k)) l.push(mediaMem[k]); cb(l); return; }
+  try {
+    var out = [], rq = mediaDb.transaction('media', 'readonly').objectStore('media').openCursor();
+    rq.onsuccess = function (e) { var cur = e.target.result; if (cur) { out.push(cur.value); cur['continue'](); } else cb(out); };
+    rq.onerror = function () { cb([]); };
+  } catch (e) { cb([]); }
+}
+function mediaUrl(rec) {
+  if (!rec) return '';
+  return rec.kind === 'svg' ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(rec.data) : rec.data;
+}
+
+/* ---------- Backup ---------- */
+function referencedMedia() {
+  var r = {};
+  for (var i = 0; i < S.cards.length; i++) { var c = S.cards[i]; if (c.deleted) continue; if (c.mFront) r[c.mFront] = 1; if (c.mBack) r[c.mBack] = 1; }
+  return r;
+}
+function buildBackup(cb) {
+  mediaAll(function (list) {
+    var ref = referencedMedia(), media = [];
+    for (var i = 0; i < list.length; i++) if (ref[list[i].id]) media.push(list[i]);
+    cb({ app: 'STUDY.LOG', format: 'studylog-backup-1', version: APP_VERSION, exportedAt: now(), state: S, media: media });
+  });
+}
+function restoreBackup(obj, cb) {
+  if (!obj || obj.format !== 'studylog-backup-1' || !obj.state) { cb('Das ist keine STUDY.LOG-Sicherung.'); return; }
+  var seen = S ? S.seenVersion : null;
+  S = migrate(fillDefaults(def(), obj.state));
+  S.seenVersion = seen || S.seenVersion;
+  save();
+  var list = obj.media || [], left = list.length;
+  if (!left) { cb(null); return; }
+  for (var i = 0; i < list.length; i++) mediaPut(list[i], function () { left--; if (left === 0) cb(null); });
+}
+
+/* ---------- Anleitung für Chats (wird in der App kopiert) ---------- */
+var CHAT_GUIDE = [
+  'Erstelle Lernkarten für meine App STUDY.LOG (Technikerschule Elektrotechnik, Energietechnik/Prozessautomatisierung).',
+  'Gib das Ergebnis als JSON-Datei mit Endung .json aus – oder, falls das nicht geht, als einen einzigen ```json-Codeblock. Nur das JSON, keine Kommentare.',
+  '',
+  'Format:',
+  '{',
+  '  "format": "studylog-1",',
+  '  "stapel": "Name des Stapels",',
+  '  "beschreibung": "optional",',
+  '  "pruefung": "JJJJ-MM-TT (optional, Prüfungstermin)",',
+  '  "karten": [',
+  '    { "typ": "frage", "vorne": "…", "hinten": "…" }',
+  '  ]',
+  '}',
+  '',
+  'Regeln:',
+  '- "typ": "frage" (Frage → Antwort), "formel" (Name/Zweck → Formel), "zeichen" (Formelzeichen → Bedeutung + Einheit), "these" (Aussage → „Richtig“/„Falsch“ + kurze Begründung).',
+  '- Formeln in LaTeX zwischen $…$, z. B. "$P = U \\\\cdot I$". Im JSON jeden Backslash doppelt schreiben.',
+  '- Unterstützt: \\frac{}{}, ^{}, _{}, \\sqrt{}, griechische Buchstaben, \\cdot, \\underline{} (komplexe Größen), \\vec{}, \\overline{}, \\text{}, \\mathrm{}, \\approx, \\Rightarrow.',
+  '- "beide": true, wenn die Karte auch rückwärts abgefragt werden soll (sinnvoll bei Formelzeichen).',
+  '- Optional "vorneSvg" / "hintenSvg": einfache Skizze als SVG-Code (z. B. Schaltplan), schwarze Linien, transparenter Hintergrund, mit viewBox.',
+  '- Eine Karte = ein Fakt. Antworten kurz (höchstens 2–3 Sätze), Einheiten immer angeben.',
+  '- **Fett** mit doppelten Sternchen, Zeilenumbruch mit \\n.',
+  '- Mehrere Stapel: { "format": "studylog-1", "stapelListe": [ {…}, {…} ] }'
+].join('\n');
+
+/* =====================================================================
+   STUDY.LOG – Oberfläche
+   ===================================================================== */
+var IC = {
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>',
+  cup: '<path d="M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v4M8 21h8M9 18h6"/>',
+  chart: '<path d="M3 21h18M6 17v-6M11 17V5M16 17v-9M21 17v-3"/>',
+  sliders: '<path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h11M21 18h-1"/><path d="M13 4h4v4h-4zM7 10h4v4H7zM15 16h4v4h-4z"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  imp: '<path d="M12 3v11M7 9l5 5 5-5M4 16v5h16v-5"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16v4zM13 7l4 4"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/>',
+  check: '<path d="M4 12l5 5L20 6"/>',
+  cal: '<path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z"/>',
+  image: '<path d="M3 5h18v14H3z"/><path d="M3 16l5-5 4 4 3-3 6 6"/><path d="M15 8h2v2h-2z"/>',
+  copy: '<path d="M8 8h12v12H8z"/><path d="M4 16V4h12"/>',
+  cards: '<path d="M3 7h14v14H3z"/><path d="M7 7V3h14v14h-4"/>',
+  play: '<path d="M7 4l13 8-13 8z"/>',
+  shuffle: '<path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/>',
+  star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+  flame: '<path d="M12 22c-4 0-7-3-7-7 0-4 4-6 4-11 3 2 5 5 5 8 1-1 2-2 2-4 2 2 3 4 3 7 0 4-3 7-7 7z"/>',
+  lock: '<path d="M5 11h14v10H5z"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  save: '<path d="M5 3h11l3 3v15H5zM8 3v6h8M8 21v-7h8v7"/>',
+  up: '<path d="M12 21V9M7 14l5-5 5 5M4 3h16"/>',
+  news: '<path d="M4 4h13v16H6a2 2 0 0 1-2-2V4zM17 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/>',
+  search: '<path d="M10 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12zM20 20l-5.5-5.5"/>',
+  eraser: '<path d="M8 20h12M4 15l9-9 6 6-6 6H8z"/>',
+  flip: '<path d="M4 9h14l-4-4M20 15H6l4 4"/>',
+  info: '<path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM12 11v6M12 7v1"/>'
+};
+function icon(n, cls) { return '<svg class="ic ' + (cls || '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (IC[n] || IC.bolt) + '</svg>'; }
+var h = escH;
+var TYPE_SHORT = { frage: 'Frage', formel: 'Formel', zeichen: 'Zeichen', these: 'These' };
+function $(id) { return document.getElementById(id); }
+function closest(el, attr) { while (el && el !== document) { if (el.getAttribute && el.getAttribute(attr) !== null) return el; el = el.parentNode; } return null; }
+
+var UI = { tab: 'home', view: null, deckId: null, session: null, editor: null, sketch: null, imp: null, search: '', lastDay: null, backupBlob: null };
+
+/* ---------- Rahmen ---------- */
+function renderTop() {
+  var lvl = levelOf(S.xp);
+  $('top').innerHTML = '<div class="logo">' + icon('bolt') + '<div>STUDY<b>.</b><span>LOG</span></div></div>' +
+    '<button class="chip" data-a="tab" data-v="ach">LV ' + lvl + '</button>';
+}
+function renderTabs() {
+  var tabs = [['home', 'bolt', 'Lernen'], ['ach', 'cup', 'Erfolge'], ['stats', 'chart', 'Statistik'], ['more', 'sliders', 'Mehr']];
+  var s = '';
+  for (var i = 0; i < tabs.length; i++) s += '<button data-a="tab" data-v="' + tabs[i][0] + '" class="' + (UI.tab === tabs[i][0] && !UI.view ? 'on' : '') + '">' + icon(tabs[i][1]) + tabs[i][2] + '</button>';
+  $('tabs').innerHTML = s;
+}
+function render() {
+  renderTop();
+  renderTabs();
+  var html;
+  if (UI.view === 'deck' && getDeck(UI.deckId) && !getDeck(UI.deckId).deleted) html = viewDeck(getDeck(UI.deckId));
+  else if (UI.view === 'import') html = viewImport();
+  else { UI.view = null; html = UI.tab === 'ach' ? viewAch() : UI.tab === 'stats' ? viewStats() : UI.tab === 'more' ? viewMore() : viewHome(); }
+  $('main').innerHTML = html;
+  hydrateMedia($('main'));
+}
+function go(tab) { UI.tab = tab; UI.view = null; render(); window.scrollTo(0, 0); }
+
+/* ---------- Startseite ---------- */
+function examBadge(d, t) {
+  if (!d.examDate) return '';
+  var n = daysBetween(t, d.examDate);
+  if (n < 0) return '<span class="exam past">PRÜFUNG VORBEI</span>';
+  if (n === 0) return '<span class="exam soon">PRÜFUNG HEUTE</span>';
+  return '<span class="exam' + (n <= 7 ? ' soon' : '') + '">PRÜFUNG IN ' + n + ' T</span>';
+}
+function playerCard() {
+  var lvl = levelOf(S.xp), cur = xpForLevel(lvl), nxt = xpForLevel(lvl + 1), t = today();
+  var pct = Math.max(0, Math.min(100, Math.round(100 * (S.xp - cur) / (nxt - cur))));
+  var jf = jokerFree(t);
+  return '<section class="panel hl"><div class="player"><div class="lvl"><span>LV</span><b>' + lvl + '</b></div>' +
+    '<div class="pl-info"><div class="pl-title">' + h(titleFor(lvl, S.profile.form)) + '</div><div class="xpbar"><i style="width:' + pct + '%"></i></div>' +
+    '<div class="pl-xp">' + fmtNum(S.xp - cur) + ' / ' + fmtNum(nxt - cur) + ' XP · NÄCHSTES LV</div></div></div>' +
+    '<div class="pl-stats"><div><b>' + icon('flame') + S.streak.count + '</b><span>Tage Serie</span></div>' +
+    '<div><b>' + S.streak.best + '</b><span>Rekord</span></div>' +
+    '<div class="' + (jf ? '' : 'joker-off') + '"><b>' + icon('shield') + (jf ? '1' : '0') + '</b><span>Joker / Woche</span></div></div></section>';
+}
+function viewHome() {
+  var t = today(), ds = liveDecks(), s = playerCard();
+  if (!ds.length) {
+    return s + '<section class="panel empty"><div class="big-ic">' + icon('cards') + '</div><h2>Noch keine Stapel</h2>' +
+      '<p>Lass dir in einem Chat Karten erstellen und importiere sie – oder leg selbst einen Stapel an.</p>' +
+      '<div class="row" style="margin-top:14px"><button class="btn" data-a="openImport">' + icon('imp') + 'Import</button>' +
+      '<button class="btn ghost" data-a="newDeck">' + icon('plus') + 'Stapel</button></div>' +
+      '<button class="btn ghost full" style="margin-top:12px" data-a="copyGuide">' + icon('copy') + 'Anleitung für Chats</button></section>';
+  }
+  var open = 0, done = 0, active = 0, tiles = '', day = S.days[t];
+  for (var i = 0; i < ds.length; i++) {
+    var d = ds[i], q = deckQueue(d, t), st = deckStats(d, t), isDone = day && day.decksDone.indexOf(d.id) >= 0;
+    open += q.total;
+    if (q.total > 0 || isDone) active++;
+    if (q.total === 0 && isDone) done++;
+    var dueHtml = q.total > 0 ? '<div class="due"><b>' + q.total + '</b><span>fällig</span></div>'
+      : (isDone ? '<div class="due ok"><b>' + icon('check') + '</b><span>geschafft</span></div>' : '<div class="due zero"><b>0</b><span>fällig</span></div>');
+    var parts = [];
+    if (q.fresh.length) parts.push(q.fresh.length + ' neu');
+    if (q.due.length) parts.push(q.due.length + (q.due.length === 1 ? ' Wiederholung' : ' Wiederholungen'));
+    if (q.relearn.length) parts.push(q.relearn.length + ' nochmal');
+    tiles += '<article class="deck' + (q.total ? ' has-due' : isDone ? ' is-done' : '') + '" data-a="openDeck" data-v="' + d.id + '">' +
+      '<div class="deck-top"><h3>' + h(d.name) + '</h3>' + examBadge(d, t) + '</div>' +
+      '<div class="deck-mid">' + dueHtml + '<div class="deck-meta">' + (parts.length ? parts.join(' · ') + '<br>' : '') + st.cards + ' Karten · ' + st.pct + ' % sitzen</div>' +
+      (q.total ? '<button class="play" data-a="learn" data-v="' + d.id + '" aria-label="Lernen">' + icon('play') + '</button>' : '') + '</div>' +
+      masteryBar(st) + '</article>';
+  }
+  var allDone = open === 0;
+  s += '<section class="panel"><div class="today' + (allDone ? ' done' : '') + '">' + icon(allDone ? 'check' : 'bolt') + '<div>' +
+    (allDone ? '<b class="glow">Alles erledigt!</b><small>Heute ist nichts mehr fällig. Stark – bis morgen.</small>'
+      : '<b>' + open + ' Karten offen</b><small>' + done + ' von ' + active + ' Stapeln heute geschafft</small>') + '</div></div></section>';
+  if (needsBackup()) s += '<div class="banner">' + icon('save') + '<span>' + (S.lastBackup ? 'Letztes Backup vor ' + Math.floor((now() - S.lastBackup) / 86400000) + ' Tagen' : 'Noch kein Backup') + '</span><button class="btn sm" data-a="backup">Sichern</button></div>';
+  s += '<div class="sec-h"><h2>Stapel</h2><div class="row" style="flex:none;gap:8px"><button class="icon-btn" data-a="openImport" aria-label="Import">' + icon('imp') + '</button><button class="icon-btn" data-a="newDeck" aria-label="Neuer Stapel">' + icon('plus') + '</button></div></div>';
+  return s + tiles;
+}
+function masteryBar(st) {
+  if (!st.items) return '<div class="mbar"></div>';
+  var f = function (n) { return (100 * n / st.items).toFixed(1); };
+  return '<div class="mbar"><i class="s-hi" style="width:' + f(st.high) + '%"></i><i class="s-mid" style="width:' + f(st.mid) + '%"></i><i class="s-lo" style="width:' + f(st.low) + '%"></i></div>';
+}
+function needsBackup() {
+  if (!liveCards().length) return false;
+  if (now() - S.createdAt < 3 * 86400000) return false;
+  return !S.lastBackup || now() - S.lastBackup > 14 * 86400000;
+}
+
+/* ---------- Stapel-Ansicht ---------- */
+function viewDeck(d) {
+  var t = today(), q = deckQueue(d, t), st = deckStats(d, t), day = S.days[t], isDone = day && day.decksDone.indexOf(d.id) >= 0;
+  var s = '<div class="dk-head"><button class="icon-btn" data-a="home" aria-label="Zurück">' + icon('back') + '</button><h1>' + h(d.name) + '</h1>' +
+    '<button class="icon-btn" data-a="editDeck" data-v="' + d.id + '" aria-label="Bearbeiten">' + icon('edit') + '</button></div>';
+  if (d.desc) s += '<p class="desc">' + h(d.desc) + '</p>';
+  s += '<section class="panel">';
+  if (d.examDate) {
+    var n = daysBetween(t, d.examDate);
+    s += '<div class="examrow">' + icon('cal') + '<div>Prüfung am <b>' + fmtDay(d.examDate) + '</b><br><span class="dim">' +
+      (n > 1 ? 'noch ' + n + ' Tage' : n === 1 ? 'morgen!' : n === 0 ? 'heute – viel Erfolg!' : 'vorbei') + (d.examRepeat && n > 1 ? ' · jede Karte kommt vorher nochmal' : '') + '</span></div></div>';
+  } else s += '<button class="btn ghost sm full" data-a="editDeck" data-v="' + d.id + '">' + icon('cal') + 'Prüfungstermin eintragen</button>';
+  s += '</section>';
+  if (q.total) s += '<button class="btn cy full" data-a="learn" data-v="' + d.id + '">' + icon('play') + 'Lernen · ' + q.total + ' fällig</button>';
+  else s += '<button class="btn full" disabled>' + icon('check') + (isDone ? 'Heute geschafft' : 'Heute nichts fällig') + '</button>';
+  s += '<button class="btn ghost full" style="margin-top:12px" data-a="practice" data-v="' + d.id + '"' + (st.cards ? '' : ' disabled') + '>' + icon('shuffle') + 'Freies Üben</button>';
+  s += '<section class="panel" style="margin-top:16px"><h3>Fortschritt</h3>' + masteryBar(st) +
+    '<div class="legend"><span><i style="background:var(--ok)"></i>sitzt (ab Stufe ' + MASTER_STAGE + '): ' + st.high + '</span><span><i style="background:var(--cyan)"></i>Stufe 3–' + (MASTER_STAGE - 1) + ': ' + st.mid +
+    '</span><span><i style="background:var(--orange)"></i>Stufe 1–2: ' + st.low + '</span><span><i style="background:#000;border:1px solid var(--line2)"></i>neu: ' + st.fresh + '</span></div>' +
+    '<div class="kpis"><div><b>' + st.cards + '</b><span>Karten</span></div><div><b>' + st.pct + ' %</b><span>sitzen</span></div><div><b>' + st.tomorrow + '</b><span>morgen</span></div></div></section>';
+  s += '<div class="sec-h"><h2>Karten</h2><button class="btn sm" data-a="newCard" data-v="' + d.id + '">' + icon('plus') + 'Karte</button></div>';
+  var cs = deckCards(d.id);
+  if (cs.length > 8) s += '<div class="search">' + icon('search') + '<input class="inp" id="cardSearch" type="search" placeholder="Karten durchsuchen" value="' + h(UI.search) + '"></div>';
+  s += '<div id="clist">' + cardList(cs) + '</div>';
+  return s;
+}
+function cardList(cs) {
+  var qy = normKey(UI.search), out = '', shown = 0, LIM = 150;
+  for (var i = 0; i < cs.length; i++) {
+    var c = cs[i];
+    if (qy && normKey(c.front + ' ' + c.back).indexOf(qy) < 0) continue;
+    shown++;
+    if (shown > LIM) continue;
+    var p = c.prog.f;
+    out += '<div class="crow" data-a="editCard" data-v="' + c.id + '"><span class="tag t-' + c.type + '">' + TYPES[c.type].slice(0, 6) + '</span>' +
+      '<div class="crow-f">' + (c.front ? renderRich(c.front, c.type) : '<span class="dim">[Skizze]</span>') + (c.mFront || c.mBack ? ' ' + icon('image') : '') + '</div>' +
+      '<span class="stg ' + (!p.seen ? 'new' : p.stage >= MASTER_STAGE ? 'hi' : '') + '">' + (!p.seen ? 'NEU' : 'S' + p.stage) + '</span></div>';
+  }
+  if (!shown) return '<div class="panel empty"><p>' + (qy ? 'Keine Treffer.' : 'Noch keine Karten. Tippe auf „+ Karte“ oder importiere welche.') + '</p></div>';
+  return '<div class="clist">' + out + (shown > LIM ? '<div class="more">+ ' + (shown - LIM) + ' weitere – nutze die Suche</div>' : '') + '</div>';
+}
+
+/* ---------- Stapel anlegen / bearbeiten ---------- */
+function sheet(html) { $('sheet').innerHTML = '<div class="sh">' + html + '</div>'; $('sheet').className = ''; }
+function closeSheet() { $('sheet').className = 'hidden'; $('sheet').innerHTML = ''; }
+function deckForm(d) {
+  return '<label class="field"><span>Name</span><input class="inp" id="dkName" maxlength="80" value="' + h(d ? d.name : '') + '" placeholder="z. B. Grundlagen Elektrotechnik"></label>' +
+    '<label class="field"><span>Beschreibung (optional)</span><input class="inp" id="dkDesc" value="' + h(d ? d.desc : '') + '"></label>' +
+    '<label class="field"><span>Prüfungstermin (optional)</span><input class="inp" id="dkExam" type="date" value="' + (d && d.examDate ? d.examDate : '') + '"></label>' +
+    '<label class="chk"><input type="checkbox" id="dkRep"' + (!d || d.examRepeat ? ' checked' : '') + '>Vor der Prüfung kommt jede Karte noch einmal dran</label>';
+}
+function newDeckSheet() {
+  sheet('<h2>Neuer Stapel</h2>' + deckForm(null) + '<div class="row"><button class="btn ghost" data-a="closeSheet">Abbrechen</button><button class="btn" data-a="saveDeck">Anlegen</button></div>');
+  setTimeout(function () { var el = $('dkName'); if (el) el.focus(); }, 250);
+}
+function editDeckSheet(id) {
+  var d = getDeck(id);
+  sheet('<h2>Stapel bearbeiten</h2>' + deckForm(d) + '<div class="row"><button class="btn ghost" data-a="closeSheet">Abbrechen</button><button class="btn" data-a="saveDeck" data-v="' + d.id + '">Speichern</button></div>' +
+    '<button class="btn danger full" style="margin-top:18px" data-a="delDeck" data-v="' + d.id + '">' + icon('trash') + 'Stapel löschen</button>');
+}
+function saveDeckForm(id) {
+  var name = $('dkName').value, data = { name: name, desc: $('dkDesc').value, examDate: $('dkExam').value || null, examRepeat: $('dkRep').checked };
+  if (!cleanName(name)) { toast('Bitte einen Namen eingeben.'); return; }
+  var d;
+  if (id) { d = getDeck(id); updateDeck(d, data); }
+  else { d = addDeck(name, data); updateDeck(d, data); askPersist(); }
+  persist(checkAch({}));
+  closeSheet();
+  UI.view = 'deck'; UI.deckId = d.id; UI.search = '';
+  render();
+}
+function persist(ach) {
+  if (!save()) toast('Speichern fehlgeschlagen – Speicher voll? Bitte Backup machen.');
+  if (!ach || !ach.length) return;
+  if (ach.length > 2) {
+    var names = []; for (var i = 0; i < ach.length; i++) names.push(ach[i].n);
+    toast('', { i: 'cup', n: ach.length + ' Erfolge: ' + names.join(', ') });
+  } else for (var j = 0; j < ach.length; j++) toastAch(ach[j]);
+}
+function askPersist() { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* egal */ } }
+
+/* ---------- Lernen ---------- */
+function startSession(deckId, practice) {
+  var d = getDeck(deckId), t = today();
+  var q = practice ? buildPractice(d) : buildSession(d, t);
+  if (!q.length) { toast(practice ? 'Der Stapel ist leer.' : 'Heute ist hier nichts fällig.'); render(); return; }
+  UI.session = { deckId: deckId, t: t, practice: !!practice, queue: q, pos: 0, flipped: false, ok: 0, bad: 0, xp: 0, hist: [], events: [], startLevel: levelOf(S.xp) };
+  showLayer();
+  renderSession();
+}
+function showLayer() { $('layer').className = ''; $('layer').scrollTop = 0; document.body.style.overflow = 'hidden'; }
+function hideLayer() { $('layer').className = 'hidden'; $('layer').innerHTML = ''; document.body.style.overflow = ''; }
+function faceHtml(it, side) {
+  var c = it.c, rev = it.dir === 'r', showFront = (side === 'q') !== rev;
+  var txt = showFront ? c.front : c.back, mid = showFront ? c.mFront : c.mBack;
+  return '<div class="face-body">' + renderRich(txt, c.type) + '</div>' + (mid ? '<div class="media" data-m="' + mid + '"></div>' : '');
+}
+function renderSession() {
+  var s = UI.session, d = getDeck(s.deckId), it = s.queue[s.pos], c = it.c, p = c.prog[it.dir];
+  var pct = Math.round(100 * s.pos / s.queue.length);
+  var tags = '<div class="tags"><span class="tag t-' + c.type + '">' + TYPES[c.type] + '</span>' + (it.dir === 'r' ? '<span class="tag dim">Rückrichtung</span>' : '') +
+    (!p.seen ? '<span class="tag cyan">Neu</span>' : '') + (p.relearn && p.last === s.t ? '<span class="tag" style="color:var(--bad)">Nochmal</span>' : '');
+  var stageInfo = s.practice ? 'Freies Üben – ohne Wertung' : (!p.seen ? 'Neue Karte' : 'Stufe ' + p.stage + (p.relearn && p.last === s.t ? ' · Wiederholung' : ''));
+  $('layer').innerHTML = '<div class="ly">' +
+    '<div class="ses-top"><button class="icon-btn" data-a="endSession" aria-label="Beenden">' + icon('close') + '</button><div class="ses-prog"><i style="width:' + pct + '%"></i></div>' +
+    '<span class="ses-count">' + (s.pos + 1) + '/' + s.queue.length + '</span></div>' +
+    '<div class="ses-deck"><span>' + h(d.name) + '</span>' + (s.practice ? '<b>Freies Üben</b>' : '<span class="volt">+' + s.xp + ' XP</span>') + '</div>' +
+    '<div class="flip" data-a="flip"><div class="flip-in' + (s.flipped ? ' is-flipped' : '') + '" id="flipIn">' +
+    '<div class="face front t-' + c.type + '">' + tags + '<span class="lbl">FRAGE</span></div>' + faceHtml(it, 'q') + '<div class="hint">Tippen zum Umdrehen</div></div>' +
+    '<div class="face back t-' + c.type + '">' + tags + '<span class="lbl">ANTWORT</span></div>' + faceHtml(it, 'a') + '</div>' +
+    '</div></div>' +
+    '<div class="ses-btns" id="sesBtns">' + sessionButtons() + '</div>' +
+    '<div class="ses-foot"><button class="lnk" data-a="undo"' + (s.hist.length ? '' : ' disabled') + '>' + icon('undo') + 'Rückgängig</button><span class="stage">' + stageInfo + '</span></div>' +
+    '</div>';
+  hydrateMedia($('layer'));
+}
+function sessionButtons() {
+  if (!UI.session.flipped) return '<button class="btn cy" data-a="flip">' + icon('flip') + 'Antwort zeigen</button>';
+  return '<button class="btn bad" data-a="ans" data-v="0">' + icon('close') + 'Nicht gewusst</button><button class="btn ok" data-a="ans" data-v="1">' + icon('check') + 'Gewusst</button>';
+}
+function flipCard() {
+  var s = UI.session; if (!s || s.finished) return;
+  s.flipped = !s.flipped;
+  var el = $('flipIn'); if (el) el.className = 'flip-in' + (s.flipped ? ' is-flipped' : '');
+  $('sesBtns').innerHTML = sessionButtons();
+}
+function flash(kind) {
+  var f = $('flash'); f.className = ''; void f.offsetWidth; f.className = kind;
+}
+function doAnswer(good) {
+  var s = UI.session; if (!s || !s.flipped || s.finished) return;
+  var it = s.queue[s.pos];
+  if (!s.practice && today() !== s.t) { toast('Neuer Lerntag – die Runde wird neu zusammengestellt.'); hideLayer(); UI.session = null; render(); return; }
+  if (s.practice) {
+    s.hist.push({ practice: true, pos: s.pos, len: s.queue.length, ok: s.ok, bad: s.bad });
+    if (good) s.ok++; else { s.bad++; s.queue.push(it); }
+  } else {
+    var sn = snapshot(it, s.t);
+    sn.pos = s.pos; sn.len = s.queue.length; sn.ok = s.ok; sn.bad = s.bad; sn.sxp = s.xp; sn.ev = s.events.length;
+    s.hist.push(sn);
+    var res = answerItem(it, good, s.t);
+    if (!good) s.queue.push(it);
+    if (res.first) { if (good) s.ok++; else s.bad++; }
+    s.xp += res.xp;
+    for (var i = 0; i < res.events.length; i++) s.events.push(res.events[i]);
+    persist(res.ach);
+    if (res.levelAfter > res.levelBefore) levelUp(res.levelBefore, res.levelAfter);
+  }
+  if (s.hist.length > 50) s.hist.shift();
+  flash(good ? 'ok' : 'bad');
+  s.pos++; s.flipped = false;
+  if (s.pos >= s.queue.length) finishSession(); else renderSession();
+}
+function doUndo() {
+  var s = UI.session; if (!s || !s.hist.length) return;
+  var sn = s.hist.pop();
+  if (sn.practice) { s.ok = sn.ok; s.bad = sn.bad; }
+  else {
+    restoreSnapshot(sn);
+    s.ok = sn.ok; s.bad = sn.bad; s.xp = sn.sxp; s.events.length = sn.ev;
+    persist(checkAch({}));
+  }
+  s.queue.length = sn.len; s.pos = sn.pos; s.flipped = true; s.finished = false;
+  renderSession();
+}
+function finishSession() {
+  var s = UI.session; s.finished = true;
+  var all = s.events.indexOf('all') >= 0, deckDone = s.events.indexOf('deck') >= 0, t = today();
+  var title = s.practice ? 'Übung beendet' : all ? 'Volle Ladung!' : deckDone ? 'Stapel geschafft!' : 'Runde beendet';
+  var sub = s.practice ? 'Freies Üben zählt nicht für Stufen und XP.' : all ? 'Alle Stapel für heute erledigt. Serie: ' + S.streak.count + ' ' + (S.streak.count === 1 ? 'Tag' : 'Tage') + '.' :
+    deckDone ? 'Dieser Stapel ist für heute erledigt.' : 'Dein Fortschritt ist gespeichert.';
+  var next = null, ds = liveDecks();
+  for (var i = 0; i < ds.length; i++) { var q = deckQueue(ds[i], t); if (q.total > 0) { next = { d: ds[i], n: q.total }; break; } }
+  $('layer').innerHTML = '<div class="ly"><div class="end"><div class="bolt-big">' + icon(all ? 'cup' : 'bolt') + '</div><h1 class="glow">' + title + '</h1><p class="dim">' + sub + '</p>' +
+    '<div class="grid3"><div><b class="volt">+' + s.xp + '</b><span>XP</span></div><div><b style="color:var(--ok)">' + s.ok + '</b><span>gewusst</span></div><div><b style="color:var(--bad)">' + s.bad + '</b><span>nicht gewusst</span></div></div>' +
+    (s.hist.length ? '<button class="btn ghost sm" data-a="undo" style="align-self:center">' + icon('undo') + 'Letzte Antwort zurück</button>' : '') +
+    (next && !s.practice ? '<button class="btn cy full" data-a="learn" data-v="' + next.d.id + '">' + icon('play') + 'Weiter: ' + h(next.d.name) + ' (' + next.n + ')</button>' : '') +
+    '<button class="btn ' + (next && !s.practice ? 'ghost' : '') + ' full" data-a="closeSession">Zur Übersicht</button></div></div>';
+}
+function closeSession() { UI.session = null; hideLayer(); render(); }
+function levelUp(from, to) {
+  var newTitle = titleIndex(to) > titleIndex(from);
+  var fx = $('fx');
+  fx.innerHTML = '<svg class="zap" viewBox="0 0 100 140"><path d="M60 4 18 78h30l-10 58 46-82H52z"/></svg><h1 class="glow">LEVEL UP!</h1><div class="lv">LV ' + from + ' → LV ' + to + '</div>' +
+    (newTitle ? '<div class="nt">Neuer Titel: ' + h(titleFor(to, S.profile.form)) + '</div>' : '') + '<small>Tippen zum Weitermachen</small>';
+  fx.className = '';
+  clearTimeout(levelUp.tm);
+  levelUp.tm = setTimeout(function () { fx.className = 'hidden'; }, 3200);
+}
+
+/* ---------- Editor ---------- */
+var SNIPS = [['$ $', '$|$', 1], ['x²', '^{|}'], ['x₁', '_{|}'], ['a/b', '\\frac{|}{}'], ['√', '\\sqrt{|}'], ['·', '\\cdot '], ['U̲', '\\underline{|}'],
+  ['Ω', '\\Omega'], ['φ', '\\varphi'], ['η', '\\eta'], ['Δ', '\\Delta'], ['ω', '\\omega'], ['π', '\\pi'], ['μ', '\\mu'], ['ρ', '\\rho'],
+  ['α', '\\alpha'], ['ε', '\\varepsilon'], ['τ', '\\tau'], ['°', '^\\circ'], ['≈', '\\approx'], ['⇒', '\\Rightarrow'], ['TXT', '\\text{|}', 1]];
+function openEditor(cardId, deckId) {
+  var c = cardId ? getCard(cardId) : null;
+  UI.editor = { id: c ? c.id : null, deckId: c ? c.deckId : deckId, type: c ? c.type : 'frage', front: c ? c.front : '', back: c ? c.back : '',
+                both: c ? c.both : false, mFront: c ? c.mFront : null, mBack: c ? c.mBack : null, newMedia: [], oldMedia: [], act: 'front' };
+  showLayer();
+  renderEditor();
+}
+function sideHtml(side) {
+  var e = UI.editor, key = side === 'front' ? 'mFront' : 'mBack', tb = '';
+  for (var i = 0; i < SNIPS.length; i++) tb += '<button data-snip="' + i + '" class="' + (SNIPS[i][2] ? 'wide' : '') + '">' + SNIPS[i][0] + '</button>';
+  return '<div class="side' + (e.act === side ? ' act' : '') + '" id="side_' + side + '"><span>' + (side === 'front' ? 'VORDERSEITE' : 'RÜCKSEITE') + '</span>' +
+    '<textarea class="inp" id="ed_' + side + '" data-side="' + side + '" placeholder="' + (side === 'front' ? 'Frage, Formelname, Formelzeichen oder These' : 'Antwort') + '">' + h(e[side]) + '</textarea>' +
+    '<div class="tb">' + tb + '</div>' +
+    '<div class="prev" id="pv_' + side + '">' + (e[side] ? renderRich(e[side], e.type) : '') + '</div>' +
+    '<div class="ed-media">' + (e[key] ? '<div class="thumb" data-m="' + e[key] + '"></div><button class="btn ghost sm" data-a="skEdit" data-v="' + side + '">' + icon('edit') + 'Ändern</button><button class="btn danger sm" data-a="mDel" data-v="' + side + '">' + icon('trash') + '</button>'
+      : '<button class="btn ghost sm" data-a="skNew" data-v="' + side + '">' + icon('edit') + 'Skizze</button><button class="btn ghost sm" data-a="mPhoto" data-v="' + side + '">' + icon('image') + 'Bild / Foto</button>') + '</div></div>';
+}
+function renderEditor() {
+  var e = UI.editor, seg = '', c = e.id ? getCard(e.id) : null;
+  for (var i = 0; i < TYPE_ORDER.length; i++) seg += '<button data-a="edType" data-v="' + TYPE_ORDER[i] + '" class="' + (e.type === TYPE_ORDER[i] ? 'on' : '') + '">' + (TYPE_ORDER[i] === 'zeichen' ? 'Zeichen' : TYPES[TYPE_ORDER[i]]) + '</button>';
+  var info = '';
+  if (c) {
+    var p = c.prog.f;
+    info = '<p class="ed-info">' + (p.seen ? 'Stufe ' + p.stage + ' · nächste Abfrage ' + (p.due ? fmtDay(p.due) : '–') + ' · ' + p.lapses + '× vergessen' : 'Noch nicht gelernt') + '</p>';
+  }
+  $('layer').innerHTML = '<div class="ly"><div class="ed-top"><button class="icon-btn" data-a="edCancel" aria-label="Abbrechen">' + icon('close') + '</button><h2>' + (e.id ? 'Karte bearbeiten' : 'Neue Karte') + '</h2>' +
+    '<button class="btn sm" data-a="edSave">' + icon('save') + 'Speichern</button></div>' + info +
+    '<div class="seg">' + seg + '</div>' + sideHtml('front') + sideHtml('back') +
+    '<label class="chk"><input type="checkbox" id="edBoth"' + (e.both ? ' checked' : '') + '>Auch rückwärts abfragen (Antwort → Frage)</label>' +
+    '<p class="ed-info">Formeln zwischen $…$ in LaTeX, z. B. <span class="m">' + texToHtml('P = U \\cdot I') + '</span> = <code>$P = U \\cdot I$</code>. **fett** für Fettdruck.</p>' +
+    (e.id ? '<button class="btn danger full" data-a="edDel">' + icon('trash') + 'Karte löschen</button>' : '') + '</div>';
+  hydrateMedia($('layer'));
+}
+function edInput(side, val) {
+  var e = UI.editor; if (!e) return;
+  e[side] = val;
+  var pv = $('pv_' + side); if (pv) pv.innerHTML = val ? renderRich(val, e.type) : '';
+}
+function edFocus(side) {
+  var e = UI.editor; if (!e || e.act === side) return;
+  e.act = side;
+  $('side_front').className = 'side' + (side === 'front' ? ' act' : '');
+  $('side_back').className = 'side' + (side === 'back' ? ' act' : '');
+}
+function insertSnip(idx) {
+  var e = UI.editor; if (!e) return;
+  var ta = $('ed_' + e.act); if (!ta) return;
+  var sn = SNIPS[idx][1], cur = sn.indexOf('|'), ins = sn.replace('|', '');
+  var a = ta.selectionStart || 0, b = ta.selectionEnd || 0, v = ta.value;
+  var sel = v.slice(a, b);
+  if (sel && cur >= 0) { ins = sn.slice(0, cur) + sel + sn.slice(cur + 1); cur = cur + sel.length; }
+  ta.value = v.slice(0, a) + ins + v.slice(b);
+  var pos = a + (cur >= 0 ? cur : ins.length);
+  try { ta.focus(); ta.setSelectionRange(pos, pos); } catch (err) { /* egal */ }
+  edInput(e.act, ta.value);
+}
+function edSave() {
+  var e = UI.editor;
+  e.front = $('ed_front').value; e.back = $('ed_back').value; e.both = $('edBoth').checked;
+  if (!e.front.trim() && !e.mFront) { toast('Die Vorderseite ist leer.'); return; }
+  if (!e.back.trim() && !e.mBack) { toast('Die Rückseite ist leer.'); return; }
+  var data = { type: e.type, front: e.front.trim(), back: e.back.trim(), both: e.both, mFront: e.mFront, mBack: e.mBack };
+  if (e.id) updateCard(getCard(e.id), data); else addCard(e.deckId, data);
+  for (var i = 0; i < e.oldMedia.length; i++) mediaDelete(e.oldMedia[i]);
+  persist(checkAch({}));
+  var keep = e.id; UI.editor = null; hideLayer(); render();
+  toast(keep ? 'Karte gespeichert.' : 'Karte angelegt.');
+}
+function edCancel() {
+  var e = UI.editor;
+  if (e) for (var i = 0; i < e.newMedia.length; i++) mediaDelete(e.newMedia[i]);
+  UI.editor = null; hideLayer(); render();
+}
+function edDelete() {
+  var e = UI.editor, c = getCard(e.id);
+  if (!window.confirm('Diese Karte löschen?')) return;
+  deleteCard(c);
+  for (var i = 0; i < e.newMedia.length; i++) mediaDelete(e.newMedia[i]);
+  persist();
+  UI.editor = null; hideLayer(); render(); toast('Karte gelöscht.');
+}
+function setMedia(side, id) {
+  var e = UI.editor, key = side === 'front' ? 'mFront' : 'mBack', old = e[key];
+  if (old) { if (e.newMedia.indexOf(old) >= 0) mediaDelete(old); else e.oldMedia.push(old); }
+  e[key] = id;
+  if (id) e.newMedia.push(id);
+}
+function edSync() {
+  var e = UI.editor; if (!e || !$('ed_front')) return;
+  e.front = $('ed_front').value; e.back = $('ed_back').value; e.both = $('edBoth').checked;
+}
+
+/* ---------- Skizzen ---------- */
+var SK_COLORS = ['#111111', '#1f4fff', '#e3262f', '#0e9f4f', '#ff8a00'];
+var SK_WIDTHS = [3, 6, 12];
+function openSketch(side, baseId) {
+  edSync();
+  UI.sketch = { side: side, strokes: [], color: SK_COLORS[0], width: SK_WIDTHS[1], eraser: false, base: null, w: 1000, h: 700, kind: 'png', cur: null };
+  if (baseId) {
+    mediaGet(baseId, function (rec) {
+      if (!rec || rec.kind === 'svg') { renderSketch(); return; }
+      var img = new Image();
+      img.onload = function () {
+        var sc = Math.min(1, 1400 / Math.max(img.naturalWidth, img.naturalHeight));
+        UI.sketch.base = img; UI.sketch.kind = rec.kind; UI.sketch.w = Math.round(img.naturalWidth * sc); UI.sketch.h = Math.round(img.naturalHeight * sc);
+        renderSketch();
+      };
+      img.onerror = function () { renderSketch(); };
+      img.src = rec.data;
+    });
+  } else renderSketch();
+}
+function renderSketch() {
+  var k = UI.sketch, sw = '', wd = '';
+  for (var i = 0; i < SK_COLORS.length; i++) sw += '<button class="sw' + (!k.eraser && k.color === SK_COLORS[i] ? ' on' : '') + '" style="background:' + SK_COLORS[i] + '" data-a="skColor" data-v="' + i + '" aria-label="Farbe"></button>';
+  for (var j = 0; j < SK_WIDTHS.length; j++) wd += '<button class="wd' + (k.width === SK_WIDTHS[j] ? ' on' : '') + '" data-a="skWidth" data-v="' + j + '" aria-label="Stärke"><i style="width:' + (SK_WIDTHS[j] + 3) + 'px;height:' + (SK_WIDTHS[j] + 3) + 'px"></i></button>';
+  $('layer').innerHTML = '<div class="ly sk"><div class="ed-top"><button class="icon-btn" data-a="skCancel" aria-label="Abbrechen">' + icon('close') + '</button><h2>Skizze</h2>' +
+    '<button class="btn sm" data-a="skSave">' + icon('check') + 'Fertig</button></div>' +
+    '<div class="sk-canvas"><canvas id="skC" width="' + k.w + '" height="' + k.h + '"></canvas></div>' +
+    '<div class="sk-tools">' + sw + '</div><div class="sk-tools">' + wd +
+    '<button class="icon-btn tool' + (k.eraser ? ' on' : '') + '" data-a="skEraser" aria-label="Radierer">' + icon('eraser') + '</button>' +
+    '<button class="icon-btn tool" data-a="skUndo" aria-label="Rückgängig">' + icon('undo') + '</button>' +
+    '<button class="icon-btn tool" data-a="skClear" aria-label="Alles löschen">' + icon('trash') + '</button></div>' +
+    '<p class="ed-info" style="margin-top:12px">Mit dem Finger zeichnen. Die Skizze erscheint auf der Karte auf hellem Hintergrund.</p></div>';
+  var cv = $('skC');
+  bindCanvas(cv);
+  skRedraw();
+}
+function skCtx() { var cv = $('skC'); return cv ? cv.getContext('2d') : null; }
+function skStroke(ctx, st) {
+  ctx.save();
+  ctx.globalCompositeOperation = st.er ? 'destination-out' : 'source-over';
+  ctx.strokeStyle = st.c || '#000'; ctx.fillStyle = st.c || '#000';
+  ctx.lineWidth = st.w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  var p = st.pts;
+  if (p.length === 1) { ctx.beginPath(); ctx.arc(p[0][0], p[0][1], st.w / 2, 0, Math.PI * 2); ctx.fill(); }
+  else {
+    ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]);
+    for (var i = 1; i < p.length - 1; i++) { var mx = (p[i][0] + p[i + 1][0]) / 2, my = (p[i][1] + p[i + 1][1]) / 2; ctx.quadraticCurveTo(p[i][0], p[i][1], mx, my); }
+    ctx.lineTo(p[p.length - 1][0], p[p.length - 1][1]);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function skRedraw() {
+  var k = UI.sketch, ctx = skCtx(); if (!ctx) return;
+  ctx.clearRect(0, 0, k.w, k.h);
+  if (k.base) ctx.drawImage(k.base, 0, 0, k.w, k.h);
+  for (var i = 0; i < k.strokes.length; i++) skStroke(ctx, k.strokes[i]);
+}
+function bindCanvas(cv) {
+  function pt(ev) { var r = cv.getBoundingClientRect(); return [(ev.clientX - r.left) * UI.sketch.w / r.width, (ev.clientY - r.top) * UI.sketch.h / r.height]; }
+  function down(ev) {
+    ev.preventDefault();
+    var k = UI.sketch; if (!k) return;
+    try { if (cv.setPointerCapture && ev.pointerId !== undefined) cv.setPointerCapture(ev.pointerId); } catch (e) { /* egal */ }
+    k.cur = { c: k.eraser ? null : k.color, w: k.eraser ? k.width * 4 + 10 : k.width * (k.w / 1000) * 1.4, er: k.eraser, pts: [pt(ev)] };
+    k.strokes.push(k.cur);
+    skStroke(skCtx(), k.cur);
+  }
+  function move(ev) {
+    var k = UI.sketch; if (!k || !k.cur) return;
+    ev.preventDefault();
+    var p = pt(ev), pts = k.cur.pts, last = pts[pts.length - 1];
+    if (Math.abs(p[0] - last[0]) + Math.abs(p[1] - last[1]) < 1.5) return;
+    pts.push(p);
+    var ctx = skCtx();
+    ctx.save();
+    ctx.globalCompositeOperation = k.cur.er ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = k.cur.c || '#000'; ctx.lineWidth = k.cur.w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(last[0], last[1]); ctx.lineTo(p[0], p[1]); ctx.stroke();
+    ctx.restore();
+  }
+  function up() { var k = UI.sketch; if (k && k.cur) { k.cur = null; skRedraw(); } }
+  if (window.PointerEvent) {
+    cv.addEventListener('pointerdown', down); cv.addEventListener('pointermove', move);
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up); cv.addEventListener('pointerleave', up);
+  } else {
+    var tw = function (fn) { return function (ev) { var t = ev.changedTouches && ev.changedTouches[0]; if (!t) return; fn({ clientX: t.clientX, clientY: t.clientY, preventDefault: function () { ev.preventDefault(); } }); }; };
+    cv.addEventListener('touchstart', tw(down), { passive: false }); cv.addEventListener('touchmove', tw(move), { passive: false }); cv.addEventListener('touchend', up);
+    cv.addEventListener('mousedown', down); cv.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
+  }
+}
+function skSave() {
+  var k = UI.sketch, cv = $('skC');
+  if (!k.strokes.length && !k.base) { toast('Die Skizze ist leer.'); return; }
+  var out = cv, data;
+  if (k.kind === 'jpg') {
+    out = document.createElement('canvas'); out.width = k.w; out.height = k.h;
+    var x = out.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, k.w, k.h); x.drawImage(cv, 0, 0);
+    data = out.toDataURL('image/jpeg', 0.85);
+  } else data = cv.toDataURL('image/png');
+  var id = 'm' + uid(), side = k.side;
+  if (k.strokes.length) S.totals.sketches++;
+  mediaPut({ id: id, kind: k.kind, data: data }, function () { /* gespeichert */ });
+  setMedia(side, id);
+  UI.sketch = null;
+  renderEditor();
+}
+
+/* ---------- Bilder ---------- */
+function pickPhoto(side) { UI.photoSide = side; var inp = $('imgIn'); inp.value = ''; inp.click(); }
+function onPhoto(file) {
+  if (!file || !UI.editor) return;
+  var rd = new FileReader();
+  rd.onload = function () {
+    var img = new Image();
+    img.onload = function () {
+      var sc = Math.min(1, 1400 / Math.max(img.naturalWidth, img.naturalHeight));
+      var cv = document.createElement('canvas'); cv.width = Math.round(img.naturalWidth * sc); cv.height = Math.round(img.naturalHeight * sc);
+      var x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height); x.drawImage(img, 0, 0, cv.width, cv.height);
+      var id = 'm' + uid();
+      mediaPut({ id: id, kind: 'jpg', data: cv.toDataURL('image/jpeg', 0.82) }, function () {});
+      edSync();
+      setMedia(UI.photoSide, id);
+      renderEditor();
+    };
+    img.onerror = function () { toast('Das Bild konnte nicht gelesen werden.'); };
+    img.src = rd.result;
+  };
+  rd.readAsDataURL(file);
+}
+function hydrateMedia(root) {
+  if (!root) return;
+  var els = root.querySelectorAll('[data-m]');
+  for (var i = 0; i < els.length; i++) (function (el) {
+    mediaGet(el.getAttribute('data-m'), function (rec) {
+      el.innerHTML = rec ? '<img alt="Skizze" src="' + mediaUrl(rec) + '">' : '<span class="dim" style="font-size:12px">Bild fehlt</span>';
+    });
+  })(els[i]);
+}
+
+/* ---------- Import ---------- */
+function viewImport() {
+  var s = '<div class="dk-head"><button class="icon-btn" data-a="home" aria-label="Zurück">' + icon('back') + '</button><h1 class="pix" style="font-size:17px">Karten importieren</h1></div>';
+  s += '<section class="panel"><p>Lass dir in einem Chat Karten im STUDY.LOG-Format erstellen. Dann die Datei wählen oder den Text hier einfügen.</p>' +
+    '<button class="btn full" data-a="pickFile">' + icon('imp') + 'Datei wählen</button>' +
+    '<label class="field" style="margin-top:14px"><span>Oder Text einfügen</span><textarea class="inp" id="impText" rows="5" placeholder="{ &quot;format&quot;: &quot;studylog-1&quot;, … }"></textarea></label>' +
+    '<button class="btn ghost full" data-a="impCheck">' + icon('search') + 'Prüfen</button><div id="impOut">' + impPlanHtml() + '</div></section>';
+  s += '<section class="panel"><h3>Anleitung für Chats</h3><p>Kopieren und in einen Chat einfügen – dann weiß er, wie die Karten aussehen müssen.</p>' +
+    '<button class="btn ghost full" data-a="copyGuide">' + icon('copy') + 'Anleitung kopieren</button></section>';
+  return s;
+}
+function impPlanHtml() {
+  var im = UI.imp; if (!im) return '';
+  if (im.parsed.error) return '<p class="err">' + h(im.parsed.error) + '</p>';
+  var plan = planImport(im.parsed, im.modes), total = 0, s = '';
+  for (var i = 0; i < plan.length; i++) {
+    var p = plan[i], src = p.src;
+    if (p.mode !== 'skip') total += p.add.length;
+    var opts = p.target ? [['merge', 'Hinzufügen'], ['new', 'Neuer Stapel'], ['skip', 'Auslassen']] : [['new', 'Importieren'], ['skip', 'Auslassen']];
+    var seg = '';
+    for (var j = 0; j < opts.length; j++) seg += '<button data-a="impMode" data-v="' + i + ':' + opts[j][0] + '" class="' + (p.mode === opts[j][0] ? 'on' : '') + '">' + opts[j][1] + '</button>';
+    s += '<div class="plan"><h4>' + h(src.name) + '</h4><div class="meta">' + src.cards.length + ' Karten' + (p.dup ? ' · ' + p.dup + ' schon vorhanden' : '') +
+      (src.examDate ? ' · Prüfung ' + fmtDay(src.examDate) : '') + (p.target ? '<br>Es gibt schon einen Stapel mit diesem Namen.' : '') + '</div><div class="seg" style="margin:0">' + seg + '</div></div>';
+  }
+  var w = im.parsed.warnings;
+  for (var k = 0; k < Math.min(w.length, 6); k++) s += '<div class="warn">⚠ ' + h(w[k]) + '</div>';
+  if (w.length > 6) s += '<div class="warn">… und ' + (w.length - 6) + ' weitere Hinweise</div>';
+  s += '<button class="btn full" style="margin-top:12px" data-a="impGo"' + (total ? '' : ' disabled') + '>' + icon('check') + total + ' Karten importieren</button>';
+  return s;
+}
+function impSetText(txt) {
+  UI.imp = { parsed: parseImport(txt), modes: {} };
+  var out = $('impOut'); if (out) out.innerHTML = impPlanHtml();
+}
+function impGo() {
+  var plan = planImport(UI.imp.parsed, UI.imp.modes), res = applyImport(plan);
+  for (var i = 0; i < res.media.length; i++) mediaPut(res.media[i], function () {});
+  askPersist();
+  persist(checkAch({}));
+  UI.imp = null;
+  toast(res.cards + ' Karten importiert' + (res.decks ? ', ' + res.decks + (res.decks === 1 ? ' neuer Stapel' : ' neue Stapel') : '') + '.');
+  if (res.deckIds.length === 1) { UI.view = 'deck'; UI.deckId = res.deckIds[0]; } else { UI.view = null; UI.tab = 'home'; }
+  UI.search = '';
+  render(); window.scrollTo(0, 0);
+}
+function readFile(file, cb) {
+  var rd = new FileReader();
+  rd.onload = function () { cb(String(rd.result || '')); };
+  rd.onerror = function () { toast('Die Datei konnte nicht gelesen werden.'); };
+  rd.readAsText(file);
+}
+function copyGuide() {
+  var done = function () { toast('Anleitung kopiert – jetzt im Chat einfügen.'); };
+  var fallback = function () {
+    sheet('<h2>Anleitung für Chats</h2><p>Text markieren und kopieren:</p><div class="guide">' + h(CHAT_GUIDE) + '</div><button class="btn full" data-a="closeSheet">Fertig</button>');
+  };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(CHAT_GUIDE).then(done, fallback);
+    else fallback();
+  } catch (e) { fallback(); }
+}
+
+/* ---------- Erfolge ---------- */
+function viewAch() {
+  var lvl = levelOf(S.xp), cur = xpForLevel(lvl), nxt = xpForLevel(lvl + 1), ti = titleIndex(lvl), form = S.profile.form;
+  var s = playerCard();
+  s += '<p class="dim" style="font-size:13px;margin:-4px 0 14px">Noch ' + fmtNum(nxt - S.xp) + ' XP bis LV ' + (lvl + 1) + '.</p>';
+  s += '<div class="sec-h"><h2>Titel</h2></div><div class="ladder">';
+  for (var i = 0; i < TITLES.length; i++) {
+    var T = TITLES[i], nm = form === 'w' ? T[2] : T[1];
+    if (i < ti) s += '<div class="got">' + icon('check') + '<span class="lv">LV ' + T[0] + '</span>' + h(nm) + '</div>';
+    else if (i === ti) s += '<div class="cur">' + icon('bolt') + '<span class="lv">LV ' + T[0] + '</span>' + h(nm) + '</div>';
+    else if (i === ti + 1) s += '<div class="lock">' + icon('lock') + '<span class="lv">LV ' + T[0] + '</span>' + h(nm) + '</div>';
+    else s += '<div class="lock">' + icon('lock') + '<span class="lv">LV ' + T[0] + '</span>???</div>';
+  }
+  s += '</div>';
+  var got = 0, grid = '';
+  for (var j = 0; j < ACH.length; j++) {
+    var a = ACH[j], on = !!S.ach[a.id];
+    if (on) got++;
+    if (!on && a.h) grid += '<div class="ach off"><div class="badge">' + icon('lock') + '</div><b>???</b><small>Geheimer Erfolg</small></div>';
+    else grid += '<div class="ach ' + (on ? 'on' : 'off') + '"><div class="badge">' + icon(a.i) + '</div><b>' + h(a.n) + '</b><small>' + h(a.d) + '</small></div>';
+  }
+  s += '<div class="sec-h"><h2>Erfolge</h2><span class="pix dim" style="font-size:12px">' + got + ' / ' + ACH.length + '</span></div><div class="agrid">' + grid + '</div>';
+  s += '<section class="panel" style="margin-top:16px"><h3>So gibt es XP</h3><ul class="xp-rules"><li>' + XP_CARD + ' XP pro fälliger Karte – egal ob gewusst oder nicht. Ehrlich antworten lohnt sich.</li>' +
+    '<li>+' + XP_DECK + ' XP, wenn ein Stapel für heute geschafft ist.</li><li>+' + XP_ALL + ' XP, wenn alle Stapel geschafft sind – das zählt auch für die Serie.</li>' +
+    '<li>1 Joker pro Woche rettet automatisch die Serie, wenn du mal einen Tag nicht lernen kannst.</li><li>Freies Üben gibt keine XP.</li></ul></section>';
+  return s;
+}
+
+/* ---------- Statistik ---------- */
+function viewStats() {
+  var t = today(), tot = S.totals, cs = liveCards(), items = 0, hi = 0, i, j;
+  for (i = 0; i < cs.length; i++) { var dirs = cardDirs(cs[i]); for (j = 0; j < dirs.length; j++) { items++; if (cs[i].prog[dirs[j]].stage >= MASTER_STAGE) hi++; } }
+  var quote = tot.answers ? Math.round(100 * tot.correct / tot.answers) : 0;
+  var s = '<section class="panel"><h2>Überblick</h2><div class="kgrid">' +
+    '<div><b>' + fmtNum(tot.answers) + '</b><span>Antworten</span></div><div><b>' + quote + ' %</b><span>gewusst</span></div><div><b>' + fmtNum(cs.length) + '</b><span>Karten</span></div>' +
+    '<div><b>' + (items ? Math.round(100 * hi / items) : 0) + ' %</b><span>sitzen</span></div><div><b>' + S.streak.best + '</b><span>Rekordserie</span></div><div><b>' + fmtNum(S.xp) + '</b><span>XP gesamt</span></div></div></section>';
+  var days = [], mx = 1;
+  for (i = 13; i >= 0; i--) { var k = addDays(t, -i), r = S.days[k]; days.push({ k: k, ok: r ? r.correct : 0, bad: r ? r.wrong : 0 }); }
+  for (i = 0; i < days.length; i++) mx = Math.max(mx, days[i].ok + days[i].bad);
+  var bars = '';
+  for (i = 0; i < days.length; i++) {
+    var dd = days[i], tt = dd.ok + dd.bad;
+    bars += '<div>' + (tt ? '<span class="bn">' + tt + '</span>' : '') + '<div class="bv" style="height:' + Math.round(100 * tt / mx) + '%"><i class="b-ok" style="height:' + (tt ? 100 * dd.ok / tt : 0) + '%"></i><i class="b-bad" style="height:' + (tt ? 100 * dd.bad / tt : 0) + '%"></i></div><span class="bl">' + weekdayShort(dd.k) + '</span></div>';
+  }
+  s += '<section class="panel"><h3>Letzte 14 Tage</h3><div class="bars">' + bars + '</div><div class="legend"><span><i style="background:var(--ok)"></i>gewusst</span><span><i style="background:var(--bad)"></i>nicht gewusst</span></div></section>';
+  var fc = forecast(t, 7), fm = 1, fb = '';
+  for (i = 0; i < fc.length; i++) fm = Math.max(fm, fc[i]);
+  for (i = 0; i < fc.length; i++) fb += '<div><span class="bn">' + fc[i] + '</span><div class="bv" style="height:' + Math.round(100 * fc[i] / fm) + '%"><i class="b-fc" style="height:100%"></i></div><span class="bl">' + (i === 0 ? 'heute' : weekdayShort(addDays(t, i))) + '</span></div>';
+  s += '<section class="panel"><h3>Fällig in den nächsten 7 Tagen</h3><div class="bars">' + fb + '</div><p style="font-size:12px;margin:8px 0 0">Ohne neue Karten der nächsten Tage.</p></section>';
+  var ds = liveDecks();
+  if (ds.length) {
+    var rows = '';
+    for (i = 0; i < ds.length; i++) { var st = deckStats(ds[i], t); rows += '<tr><td>' + h(ds[i].name) + '</td><td>' + st.cards + '</td><td>' + st.pct + ' %</td><td>' + (ds[i].examDate ? fmtDay(ds[i].examDate).slice(0, 6) : '–') + '</td></tr>'; }
+    s += '<section class="panel"><h3>Stapel</h3><table class="dtab"><tr><th>Stapel</th><th>Karten</th><th>sitzen</th><th>Prüfung</th></tr>' + rows + '</table></section>';
+  }
+  return s;
+}
+
+/* ---------- Mehr / Einstellungen ---------- */
+function viewMore() {
+  var st = S.settings;
+  var s = '<section class="panel"><h3>Profil</h3><div class="set-row"><div class="lbl">Titelform<small>z. B. ' + h(titleFor(28, 'm')) + ' / ' + h(titleFor(28, 'w')) + '</small></div>' +
+    '<div class="seg" style="margin:0;flex:none"><button data-a="setForm" data-v="m" class="' + (S.profile.form !== 'w' ? 'on' : '') + '">Männl.</button><button data-a="setForm" data-v="w" class="' + (S.profile.form === 'w' ? 'on' : '') + '">Weibl.</button></div></div></section>';
+  s += '<section class="panel"><h3>Lernen</h3>' +
+    '<div class="set-row"><div class="lbl">Neue Karten pro Stapel und Tag</div><div class="stepper"><button data-a="setNew" data-v="-5">−</button><b>' + st.newPerDay + '</b><button data-a="setNew" data-v="5">+</button></div></div>' +
+    '<div class="set-row"><div class="lbl">Neuer Lerntag beginnt um<small>Lernen nach Mitternacht zählt noch zum Vortag</small></div><div class="stepper"><button data-a="setHour" data-v="-1">−</button><b>' + st.dayStartHour + ':00</b><button data-a="setHour" data-v="1">+</button></div></div></section>';
+  s += '<section class="panel"><h3>Karten</h3><button class="btn full" data-a="openImport">' + icon('imp') + 'Karten importieren</button>' +
+    '<button class="btn ghost full" style="margin-top:12px" data-a="copyGuide">' + icon('copy') + 'Anleitung für Chats kopieren</button></section>';
+  s += '<section class="panel"><h3>Daten</h3><p>Alles bleibt auf diesem iPhone. Mach regelmäßig ein Backup (z. B. in die Dateien-App oder iCloud Drive).<br>Letztes Backup: <b>' + (S.lastBackup ? new Date(S.lastBackup).toLocaleDateString('de-DE') : 'noch nie') + '</b></p>' +
+    '<button class="btn full" data-a="backup">' + icon('save') + 'Backup erstellen</button>' +
+    '<button class="btn ghost full" style="margin-top:12px" data-a="restore">' + icon('up') + 'Backup wiederherstellen</button></section>';
+  s += '<section class="panel"><h3>Info</h3><button class="btn ghost full" data-a="news">' + icon('news') + 'Neuigkeiten</button>' +
+    '<p style="margin:12px 0 0;font-size:12px">STUDY.LOG ' + APP_VERSION + ' · offline nutzbar · keine Werbung, kein Tracking.</p></section>';
+  return s;
+}
+function prepareBackup() {
+  toast('Backup wird vorbereitet …');
+  buildBackup(function (obj) {
+    var txt = JSON.stringify(obj), name = 'studylog-backup-' + today() + '.json';
+    UI.backupBlob = { blob: new Blob([txt], { type: 'application/json' }), name: name };
+    sheet('<h2>Backup bereit</h2><p>' + name + '<br>' + (txt.length / 1048576).toFixed(2) + ' MB · ' + liveCards().length + ' Karten</p>' +
+      '<p>Tippe auf „Sichern“ und wähle z. B. „In Dateien sichern“.</p><button class="btn full" data-a="backupGo">' + icon('save') + 'Sichern</button>' +
+      '<button class="btn ghost full" style="margin-top:12px" data-a="closeSheet">Abbrechen</button>');
+  });
+}
+function backupGo() {
+  var b = UI.backupBlob; if (!b) return;
+  var file = null;
+  try { file = new File([b.blob], b.name, { type: 'application/json' }); } catch (e) { file = null; }
+  var mark = function () { S.lastBackup = now(); persist(); closeSheet(); render(); toast('Backup gesichert.'); };
+  if (file && navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: 'STUDY.LOG Backup' }).then(mark, function (err) { if (err && err.name !== 'AbortError') { download(b.blob, b.name); mark(); } });
+  } else { download(b.blob, b.name); mark(); }
+}
+function download(blob, name) {
+  var a = document.createElement('a'), url = URL.createObjectURL(blob);
+  a.href = url; a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(function () { URL.revokeObjectURL(url); a.parentNode.removeChild(a); }, 3000);
+}
+function onRestoreFile(file) {
+  readFile(file, function (txt) {
+    var obj = null;
+    try { obj = JSON.parse(txt); } catch (e) { obj = null; }
+    if (!obj || obj.format !== 'studylog-backup-1') { toast('Das ist keine STUDY.LOG-Sicherung.'); return; }
+    var n = 0; try { n = obj.state.cards.filter(function (c) { return !c.deleted; }).length; } catch (e2) { n = 0; }
+    if (!window.confirm('Sicherung vom ' + new Date(obj.exportedAt).toLocaleDateString('de-DE') + ' mit ' + n + ' Karten laden?\nDie aktuellen Daten werden dabei ersetzt.')) return;
+    restoreBackup(obj, function (err) {
+      if (err) { toast(err); return; }
+      settleStreak(today());
+      persist();
+      UI.view = null; UI.tab = 'home'; render();
+      toast('Sicherung geladen.');
+    });
+  });
+}
+function showWelcome() {
+  sheet('<h2 class="glow">Willkommen bei STUDY.LOG</h2><p>Deine Lernkarten für die Technikerschule.</p><ul>' +
+    '<li>Jeder Stapel hat jeden Tag seine Runde.</li><li>Gewusst: Die Karte kommt seltener – alle 2, 3, 4 … Tage.</li>' +
+    '<li>Nicht gewusst: Sie kommt am Ende der Runde nochmal und morgen wieder.</li><li>Karten lässt du dir von Chats erstellen und importierst sie.</li></ul>' +
+    '<p>Wie sollen deine Titel lauten?</p><div class="form-pick"><button class="btn" data-a="pickForm" data-v="m">Techniker</button><button class="btn" data-a="pickForm" data-v="w">Technikerin</button></div>');
+}
+function showNews(all) {
+  var s = '<h2>Neuigkeiten</h2>';
+  for (var i = 0; i < NEWS.length; i++) {
+    if (!all && S.seenVersion && !newer(NEWS[i].v, S.seenVersion)) continue;
+    s += '<div class="news-v">VERSION ' + NEWS[i].v + ' · ' + NEWS[i].date + '</div><ul>';
+    for (var j = 0; j < NEWS[i].items.length; j++) s += '<li>' + h(NEWS[i].items[j]) + '</li>';
+    s += '</ul>';
+  }
+  sheet(s + '<button class="btn full" data-a="newsOk">Alles klar</button>');
+}
+function newer(a, b) {
+  var x = a.split('.'), y = b.split('.');
+  for (var i = 0; i < 3; i++) { var d = (+x[i] || 0) - (+y[i] || 0); if (d) return d > 0; }
+  return false;
+}
+
+/* ---------- Toasts ---------- */
+function toast(msg, ach) {
+  var box = $('toasts'); if (!box) return;
+  var el = document.createElement('div');
+  el.className = 'toast' + (ach ? ' tach' : '');
+  el.innerHTML = ach ? icon(ach.i) + '<div><b>Erfolg freigeschaltet</b>' + h(ach.n) + '</div>' : h(msg);
+  box.appendChild(el);
+  setTimeout(function () { el.className += ' out'; setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 350); }, ach ? 3600 : 2600);
+}
+function toastAch(a) { toast('', a); }
+
+/* ---------- Aktionen ---------- */
+var ACTIONS = {
+  tab: function (v) { go(v); },
+  home: function () { UI.view = null; UI.tab = 'home'; UI.search = ''; render(); window.scrollTo(0, 0); },
+  openDeck: function (v) { UI.view = 'deck'; UI.deckId = v; UI.search = ''; render(); window.scrollTo(0, 0); },
+  learn: function (v) { startSession(v, false); },
+  practice: function (v) { startSession(v, true); },
+  newDeck: function () { newDeckSheet(); },
+  editDeck: function (v) { editDeckSheet(v); },
+  saveDeck: function (v) { saveDeckForm(v); },
+  delDeck: function (v) {
+    var d = getDeck(v);
+    if (!window.confirm('Stapel „' + d.name + '“ mit ' + deckCards(d.id).length + ' Karten löschen?')) return;
+    deleteDeck(d); persist(); closeSheet(); UI.view = null; UI.tab = 'home'; render(); toast('Stapel gelöscht.');
+  },
+  closeSheet: function () { closeSheet(); },
+  flip: function () { flipCard(); },
+  ans: function (v) { doAnswer(v === '1'); },
+  undo: function () { doUndo(); },
+  endSession: function () { var s = UI.session; if (s && s.hist.length) finishSession(); else closeSession(); },
+  closeSession: function () { closeSession(); },
+  newCard: function (v) { openEditor(null, v); },
+  editCard: function (v) { openEditor(v, null); },
+  edType: function (v) {
+    var e = UI.editor; edSync(); e.type = v;
+    if (v === 'zeichen' && !e.id && !e.both) e.both = true;
+    renderEditor();
+  },
+  edSave: function () { edSave(); },
+  edCancel: function () { edCancel(); },
+  edDel: function () { edDelete(); },
+  skNew: function (v) { openSketch(v, null); },
+  skEdit: function (v) { openSketch(v, UI.editor[v === 'front' ? 'mFront' : 'mBack']); },
+  mDel: function (v) { edSync(); setMedia(v, null); renderEditor(); },
+  mPhoto: function (v) { pickPhoto(v); },
+  skColor: function (v) { UI.sketch.color = SK_COLORS[+v]; UI.sketch.eraser = false; renderSketchTools(); },
+  skWidth: function (v) { UI.sketch.width = SK_WIDTHS[+v]; renderSketchTools(); },
+  skEraser: function () { UI.sketch.eraser = !UI.sketch.eraser; renderSketchTools(); },
+  skUndo: function () { UI.sketch.strokes.pop(); skRedraw(); },
+  skClear: function () { if (!window.confirm('Skizze komplett leeren?')) return; UI.sketch.strokes = []; UI.sketch.base = null; UI.sketch.kind = 'png'; skRedraw(); },
+  skSave: function () { skSave(); },
+  skCancel: function () { UI.sketch = null; renderEditor(); },
+  openImport: function () { UI.view = 'import'; UI.imp = null; render(); window.scrollTo(0, 0); },
+  pickFile: function () { var i = $('fileIn'); i.value = ''; i.click(); },
+  impCheck: function () { var v = $('impText').value; if (!v.trim()) { toast('Erst Text einfügen.'); return; } impSetText(v); },
+  impMode: function (v) { var p = v.split(':'); UI.imp.modes[+p[0]] = p[1]; $('impOut').innerHTML = impPlanHtml(); },
+  impGo: function () { impGo(); },
+  copyGuide: function () { copyGuide(); },
+  setForm: function (v) { S.profile.form = v; persist(); render(); },
+  pickForm: function (v) { S.profile.form = v; S.seenVersion = APP_VERSION; persist(); closeSheet(); render(); },
+  setNew: function (v) { S.settings.newPerDay = Math.max(5, Math.min(100, S.settings.newPerDay + (+v))); persist(); render(); },
+  setHour: function (v) { S.settings.dayStartHour = Math.max(0, Math.min(6, S.settings.dayStartHour + (+v))); persist(); UI.lastDay = today(); render(); },
+  backup: function () { prepareBackup(); },
+  backupGo: function () { backupGo(); },
+  restore: function () { var i = $('bakIn'); i.value = ''; i.click(); },
+  news: function () { showNews(true); },
+  newsOk: function () { S.seenVersion = APP_VERSION; persist(); closeSheet(); }
+};
+function renderSketchTools() {
+  var strokes = UI.sketch.strokes, base = UI.sketch.base;
+  renderSketch();
+  UI.sketch.strokes = strokes; UI.sketch.base = base; skRedraw();
+}
+
+/* ---------- Start ---------- */
+function onDayCheck() {
+  var t = today();
+  if (t === UI.lastDay) return;
+  UI.lastDay = t;
+  var r = settleStreak(t);
+  if (r.joker) { toast('Joker eingesetzt – deine Serie lebt!'); persist(checkAch({ joker: true })); } else persist();
+  if (r.broken) toast('Serie unterbrochen – neuer Anlauf!');
+  if (!UI.session && !UI.editor) render();
+}
+function boot() {
+  load();
+  UI.lastDay = today();
+  var r = settleStreak(UI.lastDay);
+  var ach = r.joker ? checkAch({ joker: true }) : [];
+  persist(ach);
+  render();
+  mediaInit(function () { hydrateMedia($('main')); });
+
+  document.addEventListener('click', function (ev) {
+    var fx = $('fx');
+    if (fx.className !== 'hidden' && fx.contains(ev.target)) { fx.className = 'hidden'; return; }
+    if (ev.target.id === 'sheet') { if (!(S.profile.form === null)) closeSheet(); return; }
+    var el = closest(ev.target, 'data-a');
+    if (!el || el.disabled) return;
+    var fn = ACTIONS[el.getAttribute('data-a')];
+    if (fn) { ev.preventDefault(); fn(el.getAttribute('data-v'), el, ev); }
+  });
+  var snipDown = function (ev) {
+    var b = closest(ev.target, 'data-snip'); if (!b) return;
+    ev.preventDefault(); insertSnip(+b.getAttribute('data-snip'));
+  };
+  document.addEventListener('touchstart', snipDown, { passive: false });
+  document.addEventListener('mousedown', function (ev) { if (!('ontouchstart' in window)) snipDown(ev); });
+  document.addEventListener('input', function (ev) {
+    var t = ev.target;
+    if (t.id === 'cardSearch') { UI.search = t.value; var d = getDeck(UI.deckId); if (d) $('clist').innerHTML = cardList(deckCards(d.id)); }
+    else if (t.getAttribute && t.getAttribute('data-side')) edInput(t.getAttribute('data-side'), t.value);
+  });
+  document.addEventListener('focusin', function (ev) { var t = ev.target; if (t.getAttribute && t.getAttribute('data-side')) edFocus(t.getAttribute('data-side')); });
+  document.addEventListener('keydown', function (ev) {
+    var s = UI.session; if (!s || s.finished || /INPUT|TEXTAREA/.test(ev.target.tagName)) return;
+    if (ev.key === ' ' || ev.key === 'Enter') { ev.preventDefault(); flipCard(); }
+    else if (s.flipped && (ev.key === 'ArrowRight' || ev.key === 'j')) doAnswer(true);
+    else if (s.flipped && (ev.key === 'ArrowLeft' || ev.key === 'f')) doAnswer(false);
+  });
+  $('fileIn').addEventListener('change', function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    readFile(f, function (txt) { var ta = $('impText'); if (ta) ta.value = txt.length > 200000 ? '' : txt; impSetText(txt); });
+  });
+  $('bakIn').addEventListener('change', function () { var f = this.files && this.files[0]; if (f) onRestoreFile(f); });
+  $('imgIn').addEventListener('change', function () { var f = this.files && this.files[0]; if (f) onPhoto(f); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) onDayCheck(); });
+  setInterval(onDayCheck, 60000);
+
+  if (S.profile.form === null) showWelcome();
+  else if (S.seenVersion !== APP_VERSION) showNews(false);
+  if (r.joker) toast('Joker eingesetzt – deine Serie lebt!');
+  if (r.broken) toast('Serie unterbrochen – neuer Anlauf!');
+
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    try { navigator.serviceWorker.register('./sw.js'); } catch (e) { /* offline egal */ }
+  }
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
+
+</script>
+</body>
+</html>
