@@ -130,6 +130,23 @@ input[type=date].inp{min-height:48px}
 .banner{display:flex;align-items:center;gap:10px;border:2px dashed var(--orange);color:var(--orange);padding:10px 12px;margin:0 0 14px;font-size:14px}
 .banner .btn{margin-left:auto}
 
+/* ---------- Fächer ---------- */
+.fold{display:flex;align-items:center;gap:8px;margin:20px 0 10px;padding:6px 0 10px;border-bottom:2px solid var(--line);cursor:pointer}
+.fold .chev{color:var(--cyan);transition:transform .2s;width:24px;height:24px}
+.fold.closed .chev{transform:rotate(-90deg);color:var(--dim)}
+.fold-t{flex:1;min-width:0}
+.fold h2{margin:0;font-family:var(--pix);font-size:13.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--text);overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}
+.fold.has-due h2{color:var(--cyan);text-shadow:0 0 8px rgba(41,240,255,.4)}
+.fold small{display:block;font-size:12px;color:var(--dim);margin-top:2px}
+.fold .icon-btn{width:40px;height:40px}
+.fold .play{width:44px;height:44px}
+.fold-empty{font-size:13px;color:var(--dim);padding:4px 0 8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.crumb{display:flex;align-items:center;gap:5px;font-family:var(--pix);font-size:11px;letter-spacing:.1em;color:var(--cyan);text-transform:uppercase;margin-bottom:3px;font-weight:700}
+.crumb .ic{width:15px;height:15px}
+select.inp{min-height:48px;padding-right:38px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6' fill='none' stroke='%2329f0ff' stroke-width='2.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:20px}
+.dtab .grp td{font-family:var(--pix);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);padding-top:14px;text-align:left}
+.chk small{font-size:12px}
+
 /* ---------- Stapel ---------- */
 .deck{display:block;background:linear-gradient(180deg,var(--panel2),var(--panel));border:2px solid var(--line);box-shadow:4px 4px 0 #000;padding:12px 12px 10px;margin:0 0 12px;cursor:pointer;position:relative}
 .deck:active{border-color:var(--line2)}
@@ -383,7 +400,7 @@ input[type=date].inp{min-height:48px}
 /* =====================================================================
    STUDY.LOG – Logik (ohne DOM). ES5, damit es auch auf älteren iPhones läuft.
    ===================================================================== */
-var APP_VERSION = '1.0.1';
+var APP_VERSION = '1.1.0';
 var STORE_KEY = 'studylog_v1_state';
 var SCHEMA = 1;
 var XP_CARD = 10, XP_DECK = 50, XP_ALL = 100;
@@ -391,6 +408,12 @@ var MASTER_STAGE = 5;   /* ab hier zählt eine Karte als „gefestigt“ (nur St
 var MAX_STAGE = 10;     /* Höchststufe: höchstens alle 10 Tage, bis die Karte falsch ist */
 
 var NEWS = [
+  { v: '1.1.0', date: '13.11.2026', items: [
+    'Fächer: Stapel lassen sich in Fächer (Ordner) sortieren. Die Startseite gruppiert danach, jedes Fach lässt sich einklappen.',
+    '„Fach lernen“ arbeitet alle fälligen Stapel eines Fachs nacheinander in einer Runde ab.',
+    'Fach beim Anlegen oder Bearbeiten eines Stapels wählen oder neu anlegen. Ein gelöschtes Fach löscht keine Stapel – sie landen unter „Ohne Fach“.',
+    'Import: Kartendateien können ein Fach mitbringen ("fach"), in der Vorschau lässt es sich ändern.'
+  ] },
   { v: '1.0.1', date: '12.11.2026', items: [
     'Karten kommen höchstens alle 10 Tage: Ab Stufe 10 bleibt der Abstand bei 10 Tagen, bis du eine Karte nicht weißt. Keine Karte fällt mehr aus der Abfrage.',
     '„Sitzt“ heißt jetzt „gefestigt“ (ab Stufe 5). Das ist nur eine Statistik – gefestigte Karten werden weiter abgefragt.'
@@ -450,8 +473,10 @@ function def() {
     createdAt: now(),
     profile: { form: null },
     settings: { newPerDay: 25, dayStartHour: 3 },
+    folders: [],
     decks: [],
     cards: [],
+    collapsed: {},
     xp: 0,
     totals: { answers: 0, correct: 0, wrong: 0, imports: 0, sketches: 0, undos: 0 },
     days: {},
@@ -516,12 +541,71 @@ function liveCards() {
   for (i = 0; i < S.cards.length; i++) if (!S.cards[i].deleted && ok[S.cards[i].deckId]) r.push(S.cards[i]);
   return r;
 }
+/* ---------- Fächer (Ordner für Stapel) ---------- */
+function liveFolders() {
+  var r = [];
+  for (var i = 0; i < S.folders.length; i++) if (!S.folders[i].deleted) r.push(S.folders[i]);
+  r.sort(function (a, b) { return a.name.localeCompare(b.name, 'de', { numeric: true, sensitivity: 'base' }); });
+  return r;
+}
+function getFolder(id) { for (var i = 0; i < S.folders.length; i++) if (S.folders[i].id === id) return S.folders[i]; return null; }
+function findFolderByName(name) {
+  var k = normKey(name), fs = liveFolders();
+  for (var i = 0; i < fs.length; i++) if (normKey(fs[i].name) === k) return fs[i];
+  return null;
+}
+function addFolder(name) {
+  name = cleanName(name);
+  if (!name) return null;
+  var ex = findFolderByName(name);
+  if (ex) return ex;
+  var t = now(), f = { id: uid(), name: name, createdAt: t, updatedAt: t, deleted: false, deletedAt: null };
+  S.folders.push(f);
+  return f;
+}
+function renameFolder(f, name) {
+  name = cleanName(name);
+  if (!name) return false;
+  var ex = findFolderByName(name);
+  if (ex && ex.id !== f.id) return false;
+  f.name = name; f.updatedAt = now();
+  return true;
+}
+function deleteFolder(f) {
+  var t = now(), ds = liveDecks();
+  f.deleted = true; f.deletedAt = t; f.updatedAt = t;
+  for (var i = 0; i < ds.length; i++) if (ds[i].folderId === f.id) setDeckFolder(ds[i], null);
+  delete S.collapsed[f.id];
+}
+function deckFolderId(d) {
+  if (!d.folderId) return null;
+  var f = getFolder(d.folderId);
+  return f && !f.deleted ? f.id : null;
+}
+function setDeckFolder(d, fid) {
+  var f = fid ? getFolder(fid) : null;
+  d.folderId = f && !f.deleted ? f.id : null;
+  d.updatedAt = now();
+}
+/* fid = Fach-ID oder null für „Ohne Fach“ */
+function folderDecks(fid) {
+  var r = [], ds = liveDecks();
+  for (var i = 0; i < ds.length; i++) if (deckFolderId(ds[i]) === (fid || null)) r.push(ds[i]);
+  return r;
+}
+function folderQueue(fid, t) {
+  var ds = folderDecks(fid), q = [];
+  for (var i = 0; i < ds.length; i++) q = q.concat(buildSession(ds[i], t));
+  return q;
+}
+
 function addDeck(name, opt) {
   opt = opt || {};
   var t = now();
   var d = { id: uid(), name: cleanName(name) || 'Neuer Stapel', desc: String(opt.desc || ''),
-            examDate: isDayKey(opt.examDate) ? opt.examDate : null, examRepeat: true,
+            examDate: isDayKey(opt.examDate) ? opt.examDate : null, examRepeat: true, folderId: null,
             createdAt: t, updatedAt: t, deleted: false, deletedAt: null };
+  if (opt.folderId) setDeckFolder(d, opt.folderId);
   S.decks.push(d);
   return d;
 }
@@ -1107,8 +1191,10 @@ function normCard(k) {
 }
 function normDeck(d, out) {
   var name = pick(d, ['stapel', 'name', 'titel', 'title', 'deck']);
+  var fach = pick(d, ['fach', 'ordner', 'folder', 'subject']);
   var deck = { name: cleanName(typeof name === 'string' ? name : '') || 'Importierter Stapel',
-               desc: String(pick(d, ['beschreibung', 'description', 'desc']) || ''), examDate: null, cards: [] };
+               desc: String(pick(d, ['beschreibung', 'description', 'desc']) || ''), examDate: null, cards: [],
+               folder: typeof fach === 'string' ? cleanName(fach) : '' };
   var ex = pick(d, ['pruefung', 'prüfung', 'pruefungstermin', 'examDate', 'exam']);
   if (ex) { var nd = normDate(ex); if (nd) deck.examDate = nd; else out.warnings.push(deck.name + ': Prüfungstermin „' + ex + '“ nicht erkannt (Format JJJJ-MM-TT).'); }
   var ks = pick(d, ['karten', 'cards']) || [];
@@ -1169,8 +1255,9 @@ function findDeckByName(name) {
   for (var i = 0; i < ds.length; i++) if (normKey(ds[i].name) === k) return ds[i];
   return null;
 }
-/* modes[i]: 'merge' | 'new' | 'skip' (Standard: merge, wenn es einen Stapel mit gleichem Namen gibt) */
-function planImport(parsed, modes) {
+/* modes[i]: 'merge' | 'new' | 'skip' (Standard: merge, wenn es einen Stapel mit gleichem Namen gibt)
+   folders[i]: '' = Ohne Fach | Fach-ID | '__new' = Fach aus der Datei neu anlegen                  */
+function planImport(parsed, modes, folders) {
   var plan = [];
   for (var i = 0; i < parsed.decks.length; i++) {
     var pd = parsed.decks[i], target = findDeckByName(pd.name);
@@ -1184,7 +1271,13 @@ function planImport(parsed, modes) {
       seen[key] = 1;
       add.push(pd.cards[j]);
     }
-    plan.push({ src: pd, target: target, mode: mode, add: add, dup: dup });
+    var fsel = folders && folders[i] !== undefined ? folders[i] : null;
+    if (fsel === null) {
+      var tf = mode === 'merge' ? deckFolderId(target) : null, ff = pd.folder ? findFolderByName(pd.folder) : null;
+      fsel = tf ? tf : ff ? ff.id : pd.folder ? '__new' : '';
+    }
+    if (fsel === '__new' && !pd.folder) fsel = '';
+    plan.push({ src: pd, target: target, mode: mode, add: add, dup: dup, folder: fsel });
   }
   return plan;
 }
@@ -1192,15 +1285,22 @@ function applyImport(plan) {
   var res = { decks: 0, cards: 0, media: [], deckIds: [] };
   for (var i = 0; i < plan.length; i++) {
     var p = plan[i];
-    if (p.mode === 'skip' || !p.add.length && p.mode === 'merge') continue;
-    var deck;
+    if (p.mode === 'skip') continue;
+    var deck, fid = null;
+    if (p.folder === '__new') { var nf = addFolder(p.src.folder); fid = nf ? nf.id : null; }
+    else if (p.folder) fid = p.folder;
+    if (p.mode === 'merge' && !p.add.length) {
+      if ((deckFolderId(p.target) || null) !== (fid || null)) setDeckFolder(p.target, fid);
+      continue;
+    }
     if (p.mode === 'merge') {
       deck = p.target;
+      if ((deckFolderId(deck) || null) !== (fid || null)) setDeckFolder(deck, fid);
       if (p.src.examDate && !deck.examDate) updateDeck(deck, { examDate: p.src.examDate });
     } else {
       var nm = p.src.name;
       if (findDeckByName(nm)) nm = nm + ' (neu)';
-      deck = addDeck(nm, { desc: p.src.desc, examDate: p.src.examDate });
+      deck = addDeck(nm, { desc: p.src.desc, examDate: p.src.examDate, folderId: fid });
       res.decks++;
     }
     res.deckIds.push(deck.id);
@@ -1300,6 +1400,7 @@ var CHAT_GUIDE = [
   '{',
   '  "format": "studylog-1",',
   '  "stapel": "Name des Stapels",',
+  '  "fach": "Fach als Ordner in der App, z. B. Energietechnik (optional)",',
   '  "beschreibung": "optional",',
   '  "pruefung": "JJJJ-MM-TT (optional, Prüfungstermin)",',
   '  "karten": [',
@@ -1315,6 +1416,7 @@ var CHAT_GUIDE = [
   '- Optional "vorneSvg" / "hintenSvg": einfache Skizze als SVG-Code (z. B. Schaltplan), schwarze Linien, transparenter Hintergrund, mit viewBox.',
   '- Eine Karte = ein Fakt. Antworten kurz (höchstens 2–3 Sätze), Einheiten immer angeben.',
   '- **Fett** mit doppelten Sternchen, Zeilenumbruch mit \\n.',
+  '- "fach": immer denselben Namen für dasselbe Fach verwenden, damit die Stapel im selben Ordner landen.',
   '- Mehrere Stapel: { "format": "studylog-1", "stapelListe": [ {…}, {…} ] }'
 ].join('\n');
 
@@ -1350,7 +1452,10 @@ var IC = {
   search: '<path d="M10 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12zM20 20l-5.5-5.5"/>',
   eraser: '<path d="M8 20h12M4 15l9-9 6 6-6 6H8z"/>',
   flip: '<path d="M4 9h14l-4-4M20 15H6l4 4"/>',
-  info: '<path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM12 11v6M12 7v1"/>'
+  info: '<path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM12 11v6M12 7v1"/>',
+  folder: '<path d="M3 5h7l2 3h9v12H3z"/>',
+  folderPlus: '<path d="M3 5h7l2 3h9v12H3z"/><path d="M12 11v6M9 14h6"/>',
+  chev: '<path d="M6 9l6 6 6-6"/>'
 };
 function icon(n, cls) { return '<svg class="ic ' + (cls || '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (IC[n] || IC.bolt) + '</svg>'; }
 var h = escH;
@@ -1412,7 +1517,7 @@ function viewHome() {
       '<button class="btn ghost" data-a="newDeck">' + icon('plus') + 'Stapel</button></div>' +
       '<button class="btn ghost full" style="margin-top:12px" data-a="copyGuide">' + icon('copy') + 'Anleitung für Chats</button></section>';
   }
-  var open = 0, done = 0, active = 0, tiles = '', day = S.days[t];
+  var open = 0, done = 0, active = 0, tile = {}, dueOf = {}, doneOf = {}, day = S.days[t];
   for (var i = 0; i < ds.length; i++) {
     var d = ds[i], q = deckQueue(d, t), st = deckStats(d, t), isDone = day && day.decksDone.indexOf(d.id) >= 0;
     open += q.total;
@@ -1424,7 +1529,8 @@ function viewHome() {
     if (q.fresh.length) parts.push(q.fresh.length + ' neu');
     if (q.due.length) parts.push(q.due.length + (q.due.length === 1 ? ' Wiederholung' : ' Wiederholungen'));
     if (q.relearn.length) parts.push(q.relearn.length + ' nochmal');
-    tiles += '<article class="deck' + (q.total ? ' has-due' : isDone ? ' is-done' : '') + '" data-a="openDeck" data-v="' + d.id + '">' +
+    dueOf[d.id] = q.total; doneOf[d.id] = isDone;
+    tile[d.id] = '<article class="deck' + (q.total ? ' has-due' : isDone ? ' is-done' : '') + '" data-a="openDeck" data-v="' + d.id + '">' +
       '<div class="deck-top"><h3>' + h(d.name) + '</h3>' + examBadge(d, t) + '</div>' +
       '<div class="deck-mid">' + dueHtml + '<div class="deck-meta">' + (parts.length ? parts.join(' · ') + '<br>' : '') + st.cards + ' Karten · ' + st.pct + ' % gefestigt</div>' +
       (q.total ? '<button class="play" data-a="learn" data-v="' + d.id + '" aria-label="Lernen">' + icon('play') + '</button>' : '') + '</div>' +
@@ -1435,9 +1541,61 @@ function viewHome() {
     (allDone ? '<b class="glow">Alles erledigt!</b><small>Heute ist nichts mehr fällig. Stark – bis morgen.</small>'
       : '<b>' + open + ' Karten offen</b><small>' + done + ' von ' + active + ' Stapeln heute geschafft</small>') + '</div></div></section>';
   if (needsBackup()) s += '<div class="banner">' + icon('save') + '<span>' + (S.lastBackup ? 'Letztes Backup vor ' + Math.floor((now() - S.lastBackup) / 86400000) + ' Tagen' : 'Noch kein Backup') + '</span><button class="btn sm" data-a="backup">Sichern</button></div>';
-  s += '<div class="sec-h"><h2>Stapel</h2><div class="row" style="flex:none;gap:8px"><button class="icon-btn" data-a="openImport" aria-label="Import">' + icon('imp') + '</button><button class="icon-btn" data-a="newDeck" aria-label="Neuer Stapel">' + icon('plus') + '</button></div></div>';
-  return s + tiles;
+  s += '<div class="sec-h"><h2>Stapel</h2><div class="row" style="flex:none;gap:8px"><button class="icon-btn" data-a="openImport" aria-label="Import">' + icon('imp') + '</button>' +
+    '<button class="icon-btn" data-a="newFolder" aria-label="Neues Fach">' + icon('folderPlus') + '</button><button class="icon-btn" data-a="newDeck" aria-label="Neuer Stapel">' + icon('plus') + '</button></div></div>';
+  var fs = liveFolders(), j, k;
+  if (!fs.length) { for (j = 0; j < ds.length; j++) s += tile[ds[j].id]; return s; }
+  var groups = [];
+  for (j = 0; j < fs.length; j++) groups.push({ id: fs[j].id, name: fs[j].name, decks: folderDecks(fs[j].id) });
+  var none = folderDecks(null);
+  if (none.length) groups.push({ id: null, name: 'Ohne Fach', decks: none });
+  for (j = 0; j < groups.length; j++) {
+    var g = groups[j], key = g.id || '_none', n = 0, ok = 0;
+    for (k = 0; k < g.decks.length; k++) { n += dueOf[g.decks[k].id]; if (!dueOf[g.decks[k].id] && doneOf[g.decks[k].id]) ok++; }
+    var closed = !!S.collapsed[key];
+    var meta = g.decks.length + ' Stapel · ' + (n ? n + ' offen' : g.decks.length && ok ? 'heute geschafft' : 'nichts offen');
+    s += '<div class="fold' + (closed ? ' closed' : '') + (n ? ' has-due' : '') + '" data-a="toggleFold" data-v="' + key + '">' + icon('chev', 'chev') +
+      '<div class="fold-t"><h2>' + h(g.name) + '</h2><small>' + meta + '</small></div>' +
+      (g.id ? '<button class="icon-btn" data-a="editFolder" data-v="' + g.id + '" aria-label="Fach bearbeiten">' + icon('edit') + '</button>' : '') +
+      (n ? '<button class="play" data-a="learnFolder" data-v="' + key + '" aria-label="Ganzes Fach lernen">' + icon('play') + '</button>' : '') + '</div>';
+    if (closed) continue;
+    if (!g.decks.length) s += '<div class="fold-empty">Noch kein Stapel in diesem Fach. <button class="btn ghost sm" data-a="editFolder" data-v="' + g.id + '">' + icon('cards') + 'Stapel zuordnen</button></div>';
+    for (k = 0; k < g.decks.length; k++) s += tile[g.decks[k].id];
+  }
+  return s;
 }
+function folderSheet(id) {
+  var f = id ? getFolder(id) : null, ds = liveDecks(), list = '';
+  for (var i = 0; i < ds.length; i++) {
+    var cur = deckFolderId(ds[i]), other = cur && (!f || cur !== f.id) ? getFolder(cur).name : '';
+    list += '<label class="chk"><input type="checkbox" data-fd="' + ds[i].id + '"' + (f && cur === f.id ? ' checked' : '') + '><span>' + h(ds[i].name) +
+      (other ? ' <small class="dim">(jetzt in ' + h(other) + ')</small>' : '') + '</span></label>';
+  }
+  sheet('<h2>' + (f ? 'Fach bearbeiten' : 'Neues Fach') + '</h2>' +
+    '<label class="field"><span>Name</span><input class="inp" id="fdName" maxlength="80" value="' + h(f ? f.name : '') + '" placeholder="z. B. Energietechnik"></label>' +
+    (ds.length ? '<div class="field"><span>Stapel in diesem Fach</span>' + list + '</div>' : '') +
+    '<div class="row"><button class="btn ghost" data-a="closeSheet">Abbrechen</button><button class="btn" data-a="saveFolder" data-v="' + (f ? f.id : '') + '">' + (f ? 'Speichern' : 'Anlegen') + '</button></div>' +
+    (f ? '<button class="btn danger full" style="margin-top:18px" data-a="delFolder" data-v="' + f.id + '">' + icon('trash') + 'Fach löschen</button><p style="margin:10px 0 0;font-size:12px">Die Stapel bleiben erhalten und landen unter „Ohne Fach“.</p>' : ''));
+  if (!f) setTimeout(function () { var el = $('fdName'); if (el) el.focus(); }, 250);
+}
+function saveFolder(id) {
+  var name = $('fdName').value, f;
+  if (!cleanName(name)) { toast('Bitte einen Namen eingeben.'); return; }
+  if (id) { f = getFolder(id); if (!renameFolder(f, name)) { toast('Ein Fach mit diesem Namen gibt es schon.'); return; } }
+  else f = addFolder(name);
+  var boxes = document.querySelectorAll('[data-fd]');
+  for (var i = 0; i < boxes.length; i++) {
+    var d = getDeck(boxes[i].getAttribute('data-fd'));
+    if (boxes[i].checked) { if (deckFolderId(d) !== f.id) setDeckFolder(d, f.id); }
+    else if (deckFolderId(d) === f.id) setDeckFolder(d, null);
+  }
+  delete S.collapsed[f.id];
+  persist();
+  closeSheet(); render();
+  toast(id ? 'Fach gespeichert.' : 'Fach „' + f.name + '“ angelegt.');
+}
+function folderName(key) { if (key === '_none') return 'Ohne Fach'; var f = getFolder(key); return f ? f.name : ''; }
+function folderKeys() { var fs = liveFolders(), r = []; for (var i = 0; i < fs.length; i++) r.push(fs[i].id); if (folderDecks(null).length) r.push('_none'); return r; }
 function masteryBar(st) {
   if (!st.items) return '<div class="mbar"></div>';
   var f = function (n) { return (100 * n / st.items).toFixed(1); };
@@ -1452,7 +1610,8 @@ function needsBackup() {
 /* ---------- Stapel-Ansicht ---------- */
 function viewDeck(d) {
   var t = today(), q = deckQueue(d, t), st = deckStats(d, t), day = S.days[t], isDone = day && day.decksDone.indexOf(d.id) >= 0;
-  var s = '<div class="dk-head"><button class="icon-btn" data-a="home" aria-label="Zurück">' + icon('back') + '</button><h1>' + h(d.name) + '</h1>' +
+  var fid = deckFolderId(d);
+  var s = '<div class="dk-head"><button class="icon-btn" data-a="home" aria-label="Zurück">' + icon('back') + '</button><h1>' + (fid ? '<span class="crumb">' + icon('folder') + h(getFolder(fid).name) + '</span>' : '') + h(d.name) + '</h1>' +
     '<button class="icon-btn" data-a="editDeck" data-v="' + d.id + '" aria-label="Bearbeiten">' + icon('edit') + '</button></div>';
   if (d.desc) s += '<p class="desc">' + h(d.desc) + '</p>';
   s += '<section class="panel">';
@@ -1495,14 +1654,22 @@ function cardList(cs) {
 /* ---------- Stapel anlegen / bearbeiten ---------- */
 function sheet(html) { $('sheet').innerHTML = '<div class="sh">' + html + '</div>'; $('sheet').className = ''; }
 function closeSheet() { $('sheet').className = 'hidden'; $('sheet').innerHTML = ''; }
-function deckForm(d) {
-  return '<label class="field"><span>Name</span><input class="inp" id="dkName" maxlength="80" value="' + h(d ? d.name : '') + '" placeholder="z. B. Grundlagen Elektrotechnik"></label>' +
+function folderOptions(sel, withNew) {
+  var fs = liveFolders(), o = '<option value="">Ohne Fach</option>';
+  for (var i = 0; i < fs.length; i++) o += '<option value="' + fs[i].id + '"' + (sel === fs[i].id ? ' selected' : '') + '>' + h(fs[i].name) + '</option>';
+  if (withNew) o += '<option value="__new">+ Neues Fach …</option>';
+  return o;
+}
+function deckForm(d, preFolder) {
+  return '<label class="field"><span>Fach</span><select class="inp" id="dkFolder">' + folderOptions(d ? deckFolderId(d) : preFolder || null, true) + '</select></label>' +
+    '<label class="field hidden" id="dkNewWrap"><span>Name des neuen Fachs</span><input class="inp" id="dkNewFolder" maxlength="80" placeholder="z. B. Energietechnik"></label>' +
+    '<label class="field"><span>Name</span><input class="inp" id="dkName" maxlength="80" value="' + h(d ? d.name : '') + '" placeholder="z. B. Grundlagen Elektrotechnik"></label>' +
     '<label class="field"><span>Beschreibung (optional)</span><input class="inp" id="dkDesc" value="' + h(d ? d.desc : '') + '"></label>' +
     '<label class="field"><span>Prüfungstermin (optional)</span><input class="inp" id="dkExam" type="date" value="' + (d && d.examDate ? d.examDate : '') + '"></label>' +
     '<label class="chk"><input type="checkbox" id="dkRep"' + (!d || d.examRepeat ? ' checked' : '') + '>Vor der Prüfung kommt jede Karte noch einmal dran</label>';
 }
-function newDeckSheet() {
-  sheet('<h2>Neuer Stapel</h2>' + deckForm(null) + '<div class="row"><button class="btn ghost" data-a="closeSheet">Abbrechen</button><button class="btn" data-a="saveDeck">Anlegen</button></div>');
+function newDeckSheet(preFolder) {
+  sheet('<h2>Neuer Stapel</h2>' + deckForm(null, preFolder) + '<div class="row"><button class="btn ghost" data-a="closeSheet">Abbrechen</button><button class="btn" data-a="saveDeck">Anlegen</button></div>');
   setTimeout(function () { var el = $('dkName'); if (el) el.focus(); }, 250);
 }
 function editDeckSheet(id) {
@@ -1513,9 +1680,16 @@ function editDeckSheet(id) {
 function saveDeckForm(id) {
   var name = $('dkName').value, data = { name: name, desc: $('dkDesc').value, examDate: $('dkExam').value || null, examRepeat: $('dkRep').checked };
   if (!cleanName(name)) { toast('Bitte einen Namen eingeben.'); return; }
+  var fv = $('dkFolder').value, fid = fv || null;
+  if (fv === '__new') {
+    if (!cleanName($('dkNewFolder').value)) { toast('Bitte einen Namen für das neue Fach eingeben.'); return; }
+    fid = addFolder($('dkNewFolder').value).id;
+  }
   var d;
   if (id) { d = getDeck(id); updateDeck(d, data); }
   else { d = addDeck(name, data); updateDeck(d, data); askPersist(); }
+  if (deckFolderId(d) !== fid) setDeckFolder(d, fid);
+  if (fid) delete S.collapsed[fid];
   persist(checkAch({}));
   closeSheet();
   UI.view = 'deck'; UI.deckId = d.id; UI.search = '';
@@ -1540,6 +1714,13 @@ function startSession(deckId, practice) {
   showLayer();
   renderSession();
 }
+function startFolderSession(key) {
+  var t = today(), q = folderQueue(key === '_none' ? null : key, t);
+  if (!q.length) { toast('In diesem Fach ist heute nichts fällig.'); render(); return; }
+  UI.session = { deckId: q[0].c.deckId, folder: key, t: t, practice: false, queue: q, pos: 0, flipped: false, ok: 0, bad: 0, xp: 0, hist: [], events: [], startLevel: levelOf(S.xp) };
+  showLayer();
+  renderSession();
+}
 function showLayer() { $('layer').className = ''; $('layer').scrollTop = 0; document.body.style.overflow = 'hidden'; }
 function hideLayer() { $('layer').className = 'hidden'; $('layer').innerHTML = ''; document.body.style.overflow = ''; }
 function faceHtml(it, side) {
@@ -1548,7 +1729,7 @@ function faceHtml(it, side) {
   return '<div class="face-body">' + renderRich(txt, c.type) + '</div>' + (mid ? '<div class="media" data-m="' + mid + '"></div>' : '');
 }
 function renderSession() {
-  var s = UI.session, d = getDeck(s.deckId), it = s.queue[s.pos], c = it.c, p = c.prog[it.dir];
+  var s = UI.session, it = s.queue[s.pos], c = it.c, p = c.prog[it.dir], d = getDeck(c.deckId);
   var pct = Math.round(100 * s.pos / s.queue.length);
   var tags = '<div class="tags"><span class="tag t-' + c.type + '">' + TYPES[c.type] + '</span>' + (it.dir === 'r' ? '<span class="tag dim">Rückrichtung</span>' : '') +
     (!p.seen ? '<span class="tag cyan">Neu</span>' : '') + (p.relearn && p.last === s.t ? '<span class="tag" style="color:var(--bad)">Nochmal</span>' : '');
@@ -1556,7 +1737,7 @@ function renderSession() {
   $('layer').innerHTML = '<div class="ly">' +
     '<div class="ses-top"><button class="icon-btn" data-a="endSession" aria-label="Beenden">' + icon('close') + '</button><div class="ses-prog"><i style="width:' + pct + '%"></i></div>' +
     '<span class="ses-count">' + (s.pos + 1) + '/' + s.queue.length + '</span></div>' +
-    '<div class="ses-deck"><span>' + h(d.name) + '</span>' + (s.practice ? '<b>Freies Üben</b>' : '<span class="volt">+' + s.xp + ' XP</span>') + '</div>' +
+    '<div class="ses-deck"><span>' + (s.folder ? h(folderName(s.folder)) + ' › ' : '') + h(d.name) + '</span>' + (s.practice ? '<b>Freies Üben</b>' : '<span class="volt">+' + s.xp + ' XP</span>') + '</div>' +
     '<div class="flip" data-a="flip"><div class="flip-in' + (s.flipped ? ' is-flipped' : '') + '" id="flipIn">' +
     '<div class="face front t-' + c.type + '">' + tags + '<span class="lbl">FRAGE</span></div>' + faceHtml(it, 'q') + '<div class="hint">Tippen zum Umdrehen</div></div>' +
     '<div class="face back t-' + c.type + '">' + tags + '<span class="lbl">ANTWORT</span></div>' + faceHtml(it, 'a') + '</div>' +
@@ -1618,15 +1799,21 @@ function doUndo() {
 function finishSession() {
   var s = UI.session; s.finished = true;
   var all = s.events.indexOf('all') >= 0, deckDone = s.events.indexOf('deck') >= 0, t = today();
-  var title = s.practice ? 'Übung beendet' : all ? 'Volle Ladung!' : deckDone ? 'Stapel geschafft!' : 'Runde beendet';
+  var folderDone = !!s.folder && !s.practice && !folderQueue(s.folder === '_none' ? null : s.folder, t).length;
+  var title = s.practice ? 'Übung beendet' : all ? 'Volle Ladung!' : folderDone ? 'Fach geschafft!' : deckDone && !s.folder ? 'Stapel geschafft!' : 'Runde beendet';
   var sub = s.practice ? 'Freies Üben zählt nicht für Stufen und XP.' : all ? 'Alle Stapel für heute erledigt. Serie: ' + S.streak.count + ' ' + (S.streak.count === 1 ? 'Tag' : 'Tage') + '.' :
-    deckDone ? 'Dieser Stapel ist für heute erledigt.' : 'Dein Fortschritt ist gespeichert.';
-  var next = null, ds = liveDecks();
-  for (var i = 0; i < ds.length; i++) { var q = deckQueue(ds[i], t); if (q.total > 0) { next = { d: ds[i], n: q.total }; break; } }
+    folderDone ? 'Alle Stapel in „' + h(folderName(s.folder)) + '“ sind für heute erledigt.' : deckDone && !s.folder ? 'Dieser Stapel ist für heute erledigt.' : 'Dein Fortschritt ist gespeichert.';
+  var next = null, ds = liveDecks(), i;
+  if (s.folder) {
+    var keys = folderKeys();
+    for (i = 0; i < keys.length; i++) { var fq = folderQueue(keys[i] === '_none' ? null : keys[i], t); if (fq.length) { next = { f: keys[i], n: fq.length }; break; } }
+  }
+  if (!next) for (i = 0; i < ds.length; i++) { var q = deckQueue(ds[i], t); if (q.total > 0) { next = { d: ds[i], n: q.total }; break; } }
   $('layer').innerHTML = '<div class="ly"><div class="end"><div class="bolt-big">' + icon(all ? 'cup' : 'bolt') + '</div><h1 class="glow">' + title + '</h1><p class="dim">' + sub + '</p>' +
     '<div class="grid3"><div><b class="volt">+' + s.xp + '</b><span>XP</span></div><div><b style="color:var(--ok)">' + s.ok + '</b><span>gewusst</span></div><div><b style="color:var(--bad)">' + s.bad + '</b><span>nicht gewusst</span></div></div>' +
     (s.hist.length ? '<button class="btn ghost sm" data-a="undo" style="align-self:center">' + icon('undo') + 'Letzte Antwort zurück</button>' : '') +
-    (next && !s.practice ? '<button class="btn cy full" data-a="learn" data-v="' + next.d.id + '">' + icon('play') + 'Weiter: ' + h(next.d.name) + ' (' + next.n + ')</button>' : '') +
+    (next && !s.practice ? (next.f ? '<button class="btn cy full" data-a="learnFolder" data-v="' + next.f + '">' + icon('play') + 'Weiter: Fach ' + h(folderName(next.f)) + ' (' + next.n + ')</button>'
+      : '<button class="btn cy full" data-a="learn" data-v="' + next.d.id + '">' + icon('play') + 'Weiter: ' + h(next.d.name) + ' (' + next.n + ')</button>') : '') +
     '<button class="btn ' + (next && !s.practice ? 'ghost' : '') + ' full" data-a="closeSession">Zur Übersicht</button></div></div>';
 }
 function closeSession() { UI.session = null; hideLayer(); render(); }
@@ -1890,7 +2077,7 @@ function viewImport() {
 function impPlanHtml() {
   var im = UI.imp; if (!im) return '';
   if (im.parsed.error) return '<p class="err">' + h(im.parsed.error) + '</p>';
-  var plan = planImport(im.parsed, im.modes), total = 0, s = '';
+  var plan = planImport(im.parsed, im.modes, im.folders), total = 0, s = '';
   for (var i = 0; i < plan.length; i++) {
     var p = plan[i], src = p.src;
     if (p.mode !== 'skip') total += p.add.length;
@@ -1898,7 +2085,7 @@ function impPlanHtml() {
     var seg = '';
     for (var j = 0; j < opts.length; j++) seg += '<button data-a="impMode" data-v="' + i + ':' + opts[j][0] + '" class="' + (p.mode === opts[j][0] ? 'on' : '') + '">' + opts[j][1] + '</button>';
     s += '<div class="plan"><h4>' + h(src.name) + '</h4><div class="meta">' + src.cards.length + ' Karten' + (p.dup ? ' · ' + p.dup + ' schon vorhanden' : '') +
-      (src.examDate ? ' · Prüfung ' + fmtDay(src.examDate) : '') + (p.target ? '<br>Es gibt schon einen Stapel mit diesem Namen.' : '') + '</div><div class="seg" style="margin:0">' + seg + '</div></div>';
+      (src.examDate ? ' · Prüfung ' + fmtDay(src.examDate) : '') + (p.target ? '<br>Es gibt schon einen Stapel mit diesem Namen.' : '') + '</div><div class="seg" style="margin:0">' + seg + '</div>' + impFolderSelect(p, i) + '</div>';
   }
   var w = im.parsed.warnings;
   for (var k = 0; k < Math.min(w.length, 6); k++) s += '<div class="warn">⚠ ' + h(w[k]) + '</div>';
@@ -1906,12 +2093,18 @@ function impPlanHtml() {
   s += '<button class="btn full" style="margin-top:12px" data-a="impGo"' + (total ? '' : ' disabled') + '>' + icon('check') + total + ' Karten importieren</button>';
   return s;
 }
+function impFolderSelect(p, i) {
+  if (p.mode === 'skip') return '';
+  var o = folderOptions(p.folder, false);
+  if (p.src.folder && !findFolderByName(p.src.folder)) o += '<option value="__new"' + (p.folder === '__new' ? ' selected' : '') + '>Neu: ' + h(p.src.folder) + '</option>';
+  return '<label class="field" style="margin:10px 0 0"><span>Fach</span><select class="inp" data-impf="' + i + '">' + o + '</select></label>';
+}
 function impSetText(txt) {
-  UI.imp = { parsed: parseImport(txt), modes: {} };
+  UI.imp = { parsed: parseImport(txt), modes: {}, folders: {} };
   var out = $('impOut'); if (out) out.innerHTML = impPlanHtml();
 }
 function impGo() {
-  var plan = planImport(UI.imp.parsed, UI.imp.modes), res = applyImport(plan);
+  var plan = planImport(UI.imp.parsed, UI.imp.modes, UI.imp.folders), res = applyImport(plan);
   for (var i = 0; i < res.media.length; i++) mediaPut(res.media[i], function () {});
   askPersist();
   persist(checkAch({}));
@@ -1990,7 +2183,15 @@ function viewStats() {
   var ds = liveDecks();
   if (ds.length) {
     var rows = '';
-    for (i = 0; i < ds.length; i++) { var st = deckStats(ds[i], t); rows += '<tr><td>' + h(ds[i].name) + '</td><td>' + st.cards + '</td><td>' + st.pct + ' %</td><td>' + (ds[i].examDate ? fmtDay(ds[i].examDate).slice(0, 6) : '–') + '</td></tr>'; }
+    var drow = function (d) { var st = deckStats(d, t); return '<tr><td>' + h(d.name) + '</td><td>' + st.cards + '</td><td>' + st.pct + ' %</td><td>' + (d.examDate ? fmtDay(d.examDate).slice(0, 6) : '–') + '</td></tr>'; };
+    var fks = liveFolders().length ? folderKeys() : [];
+    if (!fks.length) for (i = 0; i < ds.length; i++) rows += drow(ds[i]);
+    else for (i = 0; i < fks.length; i++) {
+      var gd = folderDecks(fks[i] === '_none' ? null : fks[i]);
+      if (!gd.length) continue;
+      rows += '<tr class="grp"><td colspan="4">' + h(folderName(fks[i])) + '</td></tr>';
+      for (j = 0; j < gd.length; j++) rows += drow(gd[j]);
+    }
     s += '<section class="panel"><h3>Stapel</h3><table class="dtab"><tr><th>Stapel</th><th>Karten</th><th>gefestigt</th><th>Prüfung</th></tr>' + rows + '</table></section>';
   }
   return s;
@@ -2093,7 +2294,17 @@ var ACTIONS = {
   openDeck: function (v) { UI.view = 'deck'; UI.deckId = v; UI.search = ''; render(); window.scrollTo(0, 0); },
   learn: function (v) { startSession(v, false); },
   practice: function (v) { startSession(v, true); },
-  newDeck: function () { newDeckSheet(); },
+  newDeck: function (v) { newDeckSheet(v || null); },
+  newFolder: function () { folderSheet(null); },
+  editFolder: function (v) { folderSheet(v); },
+  saveFolder: function (v) { saveFolder(v || null); },
+  delFolder: function (v) {
+    var f = getFolder(v), n = folderDecks(v).length;
+    if (!window.confirm('Fach „' + f.name + '“ löschen?' + (n ? '\nDie ' + n + ' Stapel darin bleiben erhalten und landen unter „Ohne Fach“.' : ''))) return;
+    deleteFolder(f); persist(); closeSheet(); render(); toast('Fach gelöscht.');
+  },
+  toggleFold: function (v) { if (S.collapsed[v]) delete S.collapsed[v]; else S.collapsed[v] = true; persist(); render(); },
+  learnFolder: function (v) { startFolderSession(v); },
   editDeck: function (v) { editDeckSheet(v); },
   saveDeck: function (v) { saveDeckForm(v); },
   delDeck: function (v) {
@@ -2184,6 +2395,11 @@ function boot() {
   };
   document.addEventListener('touchstart', snipDown, { passive: false });
   document.addEventListener('mousedown', function (ev) { if (!('ontouchstart' in window)) snipDown(ev); });
+  document.addEventListener('change', function (ev) {
+    var t = ev.target;
+    if (t.id === 'dkFolder') { var w = $('dkNewWrap'); if (w) { w.className = 'field' + (t.value === '__new' ? '' : ' hidden'); if (t.value === '__new') $('dkNewFolder').focus(); } }
+    else if (t.getAttribute && t.getAttribute('data-impf') !== null) { UI.imp.folders[+t.getAttribute('data-impf')] = t.value; $('impOut').innerHTML = impPlanHtml(); }
+  });
   document.addEventListener('input', function (ev) {
     var t = ev.target;
     if (t.id === 'cardSearch') { UI.search = t.value; var d = getDeck(UI.deckId); if (d) $('clist').innerHTML = cardList(deckCards(d.id)); }
