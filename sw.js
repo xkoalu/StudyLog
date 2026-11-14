@@ -1,7 +1,7 @@
 /* STUDY.LOG Service Worker – Dokumente network-first, Dateien cache-first.
    CACHE bei jedem Release erhöhen! */
-var CACHE = 'studylog-v1.3.0';
-var FILES = ['./', './index.html', './manifest.json?v=1', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
+var CACHE = 'studylog-v1.3.1';
+var FILES = ['./', './index.html', './manifest.json?v=2', './apple-touch-icon.png?v=2', './icon-192.png?v=2', './icon-512.png?v=2', './icon-maskable-512.png?v=2'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); }));

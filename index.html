@@ -10,9 +10,9 @@
 <meta name="theme-color" content="#05060d">
 <meta name="description" content="Lernkarten für die Technikerschule – offline, mit Stufen-System, Import aus Chats, Level und Erfolgen.">
 <title>STUDY.LOG</title>
-<link rel="manifest" href="./manifest.json?v=1">
-<link rel="apple-touch-icon" href="./apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="manifest" href="./manifest.json?v=2">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png?v=2">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=2">
 <style>
 :root{
   --bg:#05060d; --bg2:#0a0d1d; --panel:#0f1329; --panel2:#151a37; --line:#252c63; --line2:#3a4396;
@@ -408,7 +408,7 @@ select.inp{min-height:48px;padding-right:38px;background-image:url("data:image/s
 /* =====================================================================
    STUDY.LOG – Logik (ohne DOM). ES5, damit es auch auf älteren iPhones läuft.
    ===================================================================== */
-var APP_VERSION = '1.3.0';
+var APP_VERSION = '1.3.1';
 var STORE_KEY = 'studylog_v1_state';
 var SCHEMA = 1;
 var XP_CARD = 10, XP_DECK = 50, XP_ALL = 100;
@@ -416,6 +416,10 @@ var MASTER_STAGE = 5;   /* ab hier zählt eine Karte als „gefestigt“ (nur St
 var MAX_STAGE = 10;     /* Höchststufe: höchstens alle 10 Tage, bis die Karte falsch ist */
 
 var NEWS = [
+  { v: '1.3.1', date: '14.11.2026', items: [
+    'Neues App-Icon im Stil von GYM.LOG und BOOK.LOG: Sechseck, Level-Pfeile und ein Kartenstapel mit Blitz. In „Transparent“ und „Eingefärbt“ wird es zu hellen Linien auf Glas.',
+    'Auf dem Home-Bildschirm erscheint das neue Icon erst nach Neuinstallation: Backup erstellen, App vom Home-Bildschirm löschen, in Safari neu hinzufügen, Backup wiederherstellen.'
+  ] },
   { v: '1.3.0', date: '13.11.2026', items: [
     'Karten zu einem Stapel hinzufügen: In der Stapel-Ansicht gibt es jetzt einen Import-Knopf neben „+ Karte“. Alle Karten aus der Datei landen in diesem Stapel, egal welcher Stapelname darin steht. Doppelte Karten werden übersprungen.',
     '„Ganzes Fach lernen“ mischt jetzt die Karten aller Stapel des Fachs zufällig durcheinander.'
